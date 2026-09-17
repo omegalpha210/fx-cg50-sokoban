@@ -1,9 +1,12 @@
 # CASIO fx-CG50 소코반
 
+![새 SOKOBAN 앱 아이콘](assets/icon-uns.png)
+
 C + fxSDK/gint 네이티브 애드인입니다. 네 그룹·60개 레벨, 레벨별 자동 저장,
 최근 5회 UNDO, INIT 확인, MENU 및 SHIFT+AC/ON 체크포인트를 지원합니다.
-**v0.1.0-beta.1 / HARDWARE RETEST REQUIRED.** 사용자는 기존 기본 플레이 동작을
-확인했지만, 이번 탐색·레이아웃·아이콘·전원 끄기 변경은 실기 재시험이 필요합니다.
+**v0.1.0-beta.2 / HARDWARE RETEST REQUIRED.** 이번 버전은 앱 아이콘을
+10×10픽셀 공통 격자로 다시 디자인하고 아래쪽 22픽셀 여백을 확보했습니다.
+기존 기본 플레이는 사용자 확인 상태이며 새 아이콘과 남은 전원·화면 검증은 실기 재시험이 필요합니다.
 
 ![실제 공통 렌더러 화면](docs/public-captures/overview.png)
 
@@ -12,7 +15,7 @@ C + fxSDK/gint 네이티브 애드인입니다. 네 그룹·60개 레벨, 레벨
 
 ## 공개 범위와 설치
 
-[GitHub 베타](https://github.com/omegalpha210/fx-cg50-sokoban/releases/tag/v0.1.0-beta.1)는
+[GitHub 베타](https://github.com/omegalpha210/fx-cg50-sokoban/releases/tag/v0.1.0-beta.2)는
 **소스 전용**입니다. 원본 맵의 재배포 허가가 확인되지 않아 원시 맵,
 생성된 맵 데이터, 해당 맵 화면, 맵을 포함한 `.g3a`는 공개하지 않습니다.
 자체 코드는 [MIT](LICENSE), 외부 자료는 [별도 고지](THIRD_PARTY_NOTICES.md)를
@@ -57,10 +60,15 @@ MENU·변경 후 OFF에서 체크포인트를 만듭니다. 강제 전원 차단
 
 ## 이번 변경과 검증
 
-플레이에서만 24픽셀 제목줄을 없애고 HUD를 올렸습니다. 보드 공간은
+새 아이콘은 벽과 상자의 외곽을 같은 10×10픽셀 셀에 맞추고,
+검은 플레이어→주황 상자→작은 목표를 배치했습니다. 92×64 캔버스에서
+그림 경계는 (6,2)..(85,41), 아래 여백은 17→22픽셀입니다.
+선택 상태에서도 그림 자체는 동일합니다. 상용·CASIO 스프라이트나 내부 제목은 없습니다.
+게임 엔진·맵·저장·UI·조작·전원 처리는 beta.1에서 변경하지 않았습니다.
+
+앞선 beta.1에서 플레이의 24픽셀 제목줄을 없애고 HUD를 올렸습니다. 보드 공간은
 268×172에서268×196으로 커졌으며 48개 레벨의 타일이 확대되었습니다.
 최소 타일은8→9픽셀입니다. Main/레벨 제목과 하단 F-key는 유지합니다.
-아이콘은 축소 없이3픽셀 올려 OS 앱 이름과의 하단 여백을 넓혔습니다.
 
 [검증 결과](docs/ACCEPTANCE.md), [60개 크기 비교](docs/LAYOUT_AUDIT.md),
 [아이콘 비교](docs/ICON_AUDIT.md), [전원 처리](docs/POWER.md),

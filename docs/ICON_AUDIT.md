@@ -1,24 +1,45 @@
-# CASIO Main Menu icon audit
+# CASIO Main Menu icon redesign — v0.1.0-beta.2
 
-The icon contains original drawn wall/crate/player geometry and **no baked-in SOKOBAN text**. Both variants are opaque RGB PNGs, 92×64. The bottom strip is the image background (white when unselected, dark green when selected), not transparency.
+The user-supplied 92×64 screenshot was visually compared with the existing PNG. The beta.1 generator used 11×11 wall blocks and a 17×17 crate, matching the reported oversize. Its artwork ended at y46 and hardware feedback still found it close to the OS label. This milestone redraws the scene on a common grid; it is not another translation of that bitmap.
 
-`CMakeLists.txt` passes `assets/icon-uns.png` and `assets/icon-sel.png` to `generate_g3a`, which invokes fxgxa to encode the two native RGB565 icon records. The installed `GenerateG3A.cmake` was checked directly: `ICONS` becomes `--icon-uns`/`--icon-sel` and `NAME` becomes `-n`. Installed fxgxa `edit.c:edit_name` writes the header name and language-label fields; `edit_g3a_icon` copies 92×64×2 bytes per variant. Icons are not loaded or cached by the app at runtime. `NAME "SOKOBAN"` supplies the OS app-name metadata, and the internal identity remains `@SOKOBAN`; the CASIO menu draws its app label separately. The project icon generator calls no text/font drawing routine.
+## Source and exact geometry
 
-The reported hardware overlap is therefore a placement issue: the lower edge of the graphic formerly reached y49, leaving 14 clear rows. The source geometry is now translated upward by 3 px, preserving its size, colors, all artwork pixels, and a 1 px top margin. The lower edge is y46 and the bottom margin is 17 px. This is the greatest whole-pixel upward translation that preserves a nonzero top margin; further movement would require reducing the graphic or touching the top edge.
+- Old source: `tools/make_icons.py` at public tag `v0.1.0-beta.1`; original PNG bytes are preserved as `docs/public-captures/icon-uns-before.png` and `icon-sel-before.png`.
+- New source: deterministic `tools/make_icons.py`; outputs `assets/icon-uns.png` and `assets/icon-sel.png`. Both are opaque RGB, **92×64**. No external sprites, commercial Sokoban art, CASIO art, text or fonts are used.
+- Shared integer grid: **8 columns × 4 rows, 10×10 px per cell**, origin `(6,2)`. Wall and crate outer footprints both fill one **10×10** cell; orange inner fill is **8×8**, inset by one pixel.
+- The black player fits in a 7×8 footprint and the dark-gold hollow target in 5×5, each inside one cell. Player, crate, target occupy consecutive cells `(2,2)`, `(3,2)`, `(4,2)` (zero-based).
+- Walls use flat dark green outlines/green fill, floor pale mint, crate orange, player black. A partial warehouse wall layout leaves open floor and avoids a heavy enclosing border. The icon scene is project-authored, not an upstream puzzle.
+- Native-resolution drawing uses integer rectangles/lines/points with no antialiasing or image scaling. The selected variant changes only the surrounding background to dark green; the entire 80×40 artwork is identical, retaining player/crate/target visibility.
+- New bounds are **(6,2)..(85,41)**. Top margin is **2px**, bottom margin **22px** (previously 17px). Rows 42..63 contain only the variant background. The lower edge is below the conservative limit y43.
 
-The DIFF EQ icon generator explicitly keeps the bottom title strip free for the OS label. Its actual antialiased non-background bounds were measured read-only; only the placement measurements below are retained. No DIFF EQ artwork was copied. Its faint antialiasing fringes are included in the bounds, so top margins need not equal the source geometric endpoints.
+## Actual packaging pipeline
 
-| Icon | Canvas | Inclusive artwork bounds | Top margin | Bottom margin |
-|---|---|---|---:|---:|
-| uns: before | 92×64 | (8, 4)..(83, 49) | 4 | 14 |
-| uns: after | 92×64 | (8, 1)..(83, 46) | 1 | 17 |
-| uns: diffeq_reference | 92×64 | (3, 3)..(87, 49) | 3 | 14 |
-| sel: before | 92×64 | (8, 4)..(83, 49) | 4 | 14 |
-| sel: after | 92×64 | (8, 1)..(83, 46) | 1 | 17 |
-| sel: diffeq_reference | 92×64 | (4, 2)..(87, 49) | 2 | 14 |
+`CMakeLists.txt::generate_g3a` passes both PNGs directly to fxgxa through `ICONS`; there is no fxconv icon transformation. Installed `GenerateG3A.cmake` maps these to `--icon-uns` and `--icon-sel`. `tools/package.sh` repeats that packaging deterministically when SOURCE_DATE_EPOCH is set. fxgxa stores two 92×64×2 RGB565 records (11,776 bytes each) at offsets 0x1000 and 0x4000. Their exact bytes are checked against the PNGs. Icons are G3A metadata, not runtime graphics/cache.
 
-[Actual before/after preview](public-captures/icon-before-after.png) uses only SOKOBAN pixels at 3× nearest-neighbor enlargement. The original PNG snapshots were preserved before regeneration. Numeric results and input hashes are in `ICON_AUDIT.json`.
+App name `SOKOBAN`, internal ID `@SOKOBAN`, and save namespace remain unchanged. The OS name comes from separate G3A name/language-label metadata, not icon text. CASIO package version advances to `00.01.0002`; the game/runtime payload is unchanged.
 
-Reproduce with `python3 tools/make_icons.py` then `python3 tools/icon_audit.py`. Optional `--reference-dir "$SOKOBAN_DIFFEQ_REFERENCE"` refreshes reference measurements without changing that repository. `python3 tools/icon_audit.py --check` needs no DIFF EQ checkout. Tests verify every artwork pixel survives the translation, both RGB565 package icon records match the new PNGs, and the new safe margins are blank.
+## Measured assets and placement reference
 
-**HARDWARE RETEST REQUIRED:** actual CASIO Main Menu icon/label separation, selected and unselected contrast, and top-edge visibility. The 3 px change is measurable; host preview alone cannot establish whether the physical OS label gap is sufficient.
+DIFF EQ was inspected read-only, including its 92×64 normal/selected PNGs, 4× supersampled generator and CMake declarations. Its generator explicitly leaves the lower title strip free. All faint antialiasing pixels count in the bounds below. It is a placement reference only; none of its art is incorporated into SOKOBAN. This redesign deliberately uses a larger lower margin than that reference because of the reported physical overlap.
+
+| Variant / stage | Inclusive bounds | Top px | Bottom px | PNG bytes |
+|---|---|---:|---:|---:|
+| uns / before | (8,1)..(83,46) | 1 | 17 | 658 |
+| uns / after | (6,2)..(85,41) | 2 | 22 | 478 |
+| uns / diffeq_reference | (3,3)..(87,49) | 3 | 14 | 3698 |
+| sel / before | (8,1)..(83,46) | 1 | 17 | 652 |
+| sel / after | (6,2)..(85,41) | 2 | 22 | 480 |
+| sel / diffeq_reference | (4,2)..(87,49) | 2 | 14 | 4425 |
+
+## Previews and reproduction
+
+- [Current beta.1 versus new beta.2, both variants](public-captures/icon-before-after.png).
+- [New unselected, 8× nearest-neighbor](public-captures/icon-uns-8x.png); [selected, 8×](public-captures/icon-sel-8x.png).
+- [Illustrative label-safe-area mock](public-captures/icon-label-safe-mock.png). The tinted reserve and sample label are explanatory overlays, absent from both icon assets. The sample y52 label is not a measured or emulated CASIO label position.
+- An optional actual DIFF EQ/SOKOBAN side-by-side is generated locally as `docs/captures/icon-diffeq-placement.png`. Reference artwork stays out of the public snapshot; the numeric evidence above is public.
+
+Run `python3 tools/make_icons.py`, then `python3 tools/icon_audit.py`. Optional `--reference-dir "$SOKOBAN_DIFFEQ_REFERENCE"` refreshes read-only reference measurements and the local comparison. `--check` verifies committed numeric/Markdown evidence without needing that checkout. SHA-256 and PNG color counts are in `ICON_AUDIT.json`.
+
+Eight icon tests cover deterministic PNGs, opaque flat palette, native canvas, clear top/bottom margins, equal measured wall/crate footprints, all-cell grid alignment, player/crate/goal placement, preserved selected artwork, absence of text drawing, audit dimensions and both native RGB565 records. No runtime game/UI/input/storage source is changed.
+
+**HARDWARE TEST REQUIRED:** actual OS-label gap, no top clipping, natural wall/crate scale, identifiable player/goal/push-puzzle scene, selected/unselected contrast, relative size beside other apps and separation comparable to DIFF EQ. Host geometry and mock labels cannot establish physical OS acceptance. See the priority icon checks in [HARDWARE_RETEST.md](HARDWARE_RETEST.md).

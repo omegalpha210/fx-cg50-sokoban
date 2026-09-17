@@ -57,8 +57,8 @@ bash -c 'source tools/env.sh; "$SOKOBAN_PYTHON" tools/memory_report.py'
 Local `build-host/`, `build-cg/`, `.local/`, `dist/`, downloaded/generated map data,
 and full-map captures are not public source assets. The normal package is
 `dist/SOKOBAN.g3a`, with `dist/SHA256SUMS.txt`. Program name/internal identity
-remain `SOKOBAN` / `@SOKOBAN`. The prerelease is `v0.1.0-beta.1`; the numeric CASIO
-version field is `00.01.0001` (the CASIO field has no beta suffix).
+remain `SOKOBAN` / `@SOKOBAN`. The prerelease is `v0.1.0-beta.2`; the numeric CASIO
+version field is `00.01.0002` (the CASIO field has no beta suffix).
 
 `tools/package.sh` honors `SOURCE_DATE_EPOCH` for a fixed UTC header date. Set the
 same value when comparing local and clean-public-source builds. Without it,
@@ -77,8 +77,12 @@ The shared selector helper uses row-major modulo traversal for LEFT/RIGHT and
 same-column vertical modulo for UP/DOWN. Play LEVEL-/+ are separate and bounded.
 The gameplay-only title is removed, board viewport is268×196 at(124,4), and HUD
 moves up24px. Full60 before/after measurements are in [LAYOUT_AUDIT.md](LAYOUT_AUDIT.md).
-Icon images retain92×64 pixels; geometry translates up3px without scaling.
-[ICON_AUDIT.md](ICON_AUDIT.md) records pixel bounds and native RGB565 verification.
+The beta.2 icon is redrawn on a 10×10 grid with equal wall/crate footprints.
+Opaque 92×64 PNGs retain 22 clear lower rows; the selected state changes only
+the surrounding background. Regenerate with `python3 tools/make_icons.py`, then
+`python3 tools/icon_audit.py`. [ICON_AUDIT.md](ICON_AUDIT.md) records pixel bounds,
+8× previews, an explicitly illustrative label mock and native RGB565 verification.
+No runtime game/UI/storage/input code changes accompany this icon update.
 
 Raw `keydev_read(...,true,NULL)` blocks while idle and retains release events.
 It cannot auto-handle MENU/OFF before a checkpoint. Arrows repeat after500ms,

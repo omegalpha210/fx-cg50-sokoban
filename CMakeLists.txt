@@ -15,7 +15,7 @@ add_custom_command(TARGET sokoban POST_BUILD
   COMMAND "${CMAKE_COMMAND}" -E make_directory "${CMAKE_CURRENT_SOURCE_DIR}/dist"
   VERBATIM)
 generate_g3a(TARGET sokoban OUTPUT "dist/SOKOBAN.g3a" NAME "SOKOBAN"
-  VERSION "00.01.0001" ICONS assets/icon-uns.png assets/icon-sel.png)
+  VERSION "00.01.0002" ICONS assets/icon-uns.png assets/icon-sel.png)
 # The installed GenerateG3A has no INTERNAL argument. Assign our own namespace
 # after generation; never share a default/DIFF EQ internal identity.
 add_custom_command(TARGET sokoban POST_BUILD

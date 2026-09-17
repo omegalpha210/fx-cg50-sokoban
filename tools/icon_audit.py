@@ -1,23 +1,23 @@
 #!/usr/bin/env python3
-"""Report real icon pixels and create the SOKOBAN-only before/after comparison.
+"""Measure icon pixels and reproduce public previews.
 
-An optional --reference-dir reads DIFF EQ icons for numeric placement evidence.
-The reference artwork and private filesystem path are never copied to outputs.
+Optional --reference-dir reads DIFF EQ without changing it. Its actual artwork
+comparison is written only to excluded docs/captures; public output retains
+numeric placement evidence and the project's original SOKOBAN artwork.
 """
-from __future__ import annotations
-
 import argparse
 import hashlib
 import json
 from pathlib import Path
 from PIL import Image, ImageChops, ImageDraw
+from make_icons import TILE, SCENE, ORIGIN
 
 ROOT = Path(__file__).resolve().parents[1]
+PUBLIC = ROOT / 'docs/public-captures'
 
 
 def measure(path):
     with Image.open(path) as source:
-        source.load()
         image = source.convert('RGB')
         background = image.getpixel((0, 0))
         bounds = ImageChops.difference(image, Image.new('RGB', image.size, background)).getbbox()
@@ -26,83 +26,133 @@ def measure(path):
         return {'mode': source.mode, 'canvas': list(image.size), 'background_rgb': list(background),
                 'artwork_bounds_inclusive': [left, top, right-1, bottom-1],
                 'top_margin': top, 'bottom_margin': image.height-bottom,
+                'bytes': path.stat().st_size, 'colors': len(image.getcolors(image.width*image.height)),
                 'sha256': hashlib.sha256(path.read_bytes()).hexdigest()}
 
 
 def report(reference=None):
-    result = {'translation_y': -3, 'scaling': False, 'baked_in_text': False,
-              'bounds_convention': 'inclusive non-background pixel bounds',
-              'variants': {}}
+    result = {'milestone': 'v0.1.0-beta.2', 'redesign': True, 'baked_in_text': False,
+              'antialiasing': False, 'logical_tile': [TILE, TILE],
+              'wall_footprint': [TILE, TILE], 'crate_footprint': [TILE, TILE],
+              'crate_inner_fill': [8, 8], 'grid': [len(SCENE[0]), len(SCENE)],
+              'grid_origin': list(ORIGIN), 'safe_bottom_limit': 43,
+              'bounds_convention': 'inclusive non-background pixel bounds', 'variants': {}}
     for variant in ('uns', 'sel'):
         result['variants'][variant] = {
-            'before': measure(ROOT / f'docs/public-captures/icon-{variant}-before.png'),
+            'before': measure(PUBLIC / f'icon-{variant}-before.png'),
             'after': measure(ROOT / f'assets/icon-{variant}.png')}
         if reference:
             result['variants'][variant]['diffeq_reference'] = measure(reference / f'assets/icon-{variant}.png')
     return result
 
 
-def preview():
-    sheet = Image.new('RGB', (720, 700), '#e5e9e7')
-    draw = ImageDraw.Draw(sheet)
-    draw.text((18, 10), 'SOKOBAN: actual icon pixels, nearest-neighbor enlargement (3x)', fill='black')
+def paste_icon(sheet, path, position, scale):
+    with Image.open(path) as icon:
+        sheet.paste(icon.resize((92*scale, 64*scale), Image.Resampling.NEAREST), position)
+
+
+def comparison(reference=None):
+    local_reference = reference is not None
+    sheet = Image.new('RGB', (824, 720), '#e5e9e7')
+    d = ImageDraw.Draw(sheet)
+    title = 'DIFF EQ placement reference / original SOKOBAN redesign' if local_reference else 'SOKOBAN beta.1 / beta.2 redesign'
+    d.text((20, 12), title + ' - 4x nearest-neighbor', fill='black')
     for row, variant in enumerate(('uns', 'sel')):
-        for col, label in enumerate(('before', 'after')):
-            x, y = 24 + col * 350, 55 + row * 325
-            path = ROOT / (f'docs/public-captures/icon-{variant}-before.png' if label == 'before' else f'assets/icon-{variant}.png')
-            with Image.open(path) as icon:
-                sheet.paste(icon.resize((276, 192), Image.Resampling.NEAREST), (x, y+22))
-            bounds = measure(path)
-            draw.text((x, y), f'{label.upper()} / {variant}', fill='black')
-            draw.text((x, y+222), f"Bounds: {bounds['artwork_bounds_inclusive']}", fill='black')
-            draw.text((x, y+240), f"Top: {bounds['top_margin']}px; bottom: {bounds['bottom_margin']}px", fill='black')
-    draw.text((18, 675), 'Canvas remains 92x64. OS label is separate; actual calculator retest required.', fill='black')
-    sheet.save(ROOT / 'docs/public-captures/icon-before-after.png')
+        for column, stage in enumerate(('before', 'after')):
+            path = (reference / f'assets/icon-{variant}.png' if local_reference else PUBLIC / f'icon-{variant}-before.png') if stage == 'before' else ROOT / f'assets/icon-{variant}.png'
+            x, y = 20 + column*412, 48 + row*320
+            label = ('DIFF EQ' if local_reference else 'OLD beta.1') if stage == 'before' else 'NEW beta.2'
+            d.text((x,y), f'{label} / {variant}', fill='black')
+            paste_icon(sheet, path, (x,y+22), 4)
+            values = measure(path)
+            d.text((x,y+283), f"Bounds {values['artwork_bounds_inclusive']}; bottom {values['bottom_margin']}px", fill='black')
+    d.text((20,696), 'Placement comparison only. Physical CASIO Main Menu / OS label must be retested.', fill='black')
+    return sheet
+
+
+def previews(reference=None):
+    PUBLIC.mkdir(parents=True, exist_ok=True)
+    comparison().save(PUBLIC / 'icon-before-after.png')
+    for variant in ('uns','sel'):
+        with Image.open(ROOT / f'assets/icon-{variant}.png') as icon:
+            icon.resize((736,512),Image.Resampling.NEAREST).save(PUBLIC / f'icon-{variant}-8x.png')
+    # Intentional diagram, not a claim to reproduce the CASIO OS font/label position.
+    sheet = Image.new('RGB',(824,400),'#e5e9e7'); d = ImageDraw.Draw(sheet)
+    d.text((20,12),'ILLUSTRATIVE SAFE-AREA MOCK - NOT CASIO OS RENDERING',fill='black')
+    for column,variant in enumerate(('uns','sel')):
+        x,y=20+column*412,68
+        with Image.open(ROOT/f'assets/icon-{variant}.png') as icon:
+            canvas=icon.copy()
+        overlay=ImageDraw.Draw(canvas)
+        overlay.rectangle((0,42,91,63), fill='#fff0cd' if variant=='uns' else '#42503a')
+        overlay.line((0,42,91,42),fill='#ad8124')
+        overlay.text((21,52),'SOKOBAN',fill='black' if variant=='uns' else 'white')
+        sheet.paste(canvas.resize((368,256),Image.Resampling.NEAREST),(x,y))
+        d.text((x,45),f'{variant}: artwork y2..41 / reserve y42..63',fill='black')
+        d.text((x,340),'22px reserved. Sample label at y52 is illustrative.',fill='black')
+    d.text((20,376),'Actual assets have plain backgrounds here; no text, stripe, or tinted band is baked in.',fill='black')
+    sheet.save(PUBLIC/'icon-label-safe-mock.png')
+    if reference:
+        output=ROOT/'docs/captures/icon-diffeq-placement.png'
+        output.parent.mkdir(parents=True,exist_ok=True)
+        comparison(reference).save(output)
 
 
 def markdown(result):
-    lines = ['# CASIO Main Menu icon audit', '',
-             'The icon contains original drawn wall/crate/player geometry and **no baked-in SOKOBAN text**. Both variants are opaque RGB PNGs, 92×64. The bottom strip is the image background (white when unselected, dark green when selected), not transparency.', '',
-             '`CMakeLists.txt` passes `assets/icon-uns.png` and `assets/icon-sel.png` to `generate_g3a`, which invokes fxgxa to encode the two native RGB565 icon records. The installed `GenerateG3A.cmake` was checked directly: `ICONS` becomes `--icon-uns`/`--icon-sel` and `NAME` becomes `-n`. Installed fxgxa `edit.c:edit_name` writes the header name and language-label fields; `edit_g3a_icon` copies 92×64×2 bytes per variant. Icons are not loaded or cached by the app at runtime. `NAME "SOKOBAN"` supplies the OS app-name metadata, and the internal identity remains `@SOKOBAN`; the CASIO menu draws its app label separately. The project icon generator calls no text/font drawing routine.', '',
-             'The reported hardware overlap is therefore a placement issue: the lower edge of the graphic formerly reached y49, leaving 14 clear rows. The source geometry is now translated upward by 3 px, preserving its size, colors, all artwork pixels, and a 1 px top margin. The lower edge is y46 and the bottom margin is 17 px. This is the greatest whole-pixel upward translation that preserves a nonzero top margin; further movement would require reducing the graphic or touching the top edge.', '',
-             'The DIFF EQ icon generator explicitly keeps the bottom title strip free for the OS label. Its actual antialiased non-background bounds were measured read-only; only the placement measurements below are retained. No DIFF EQ artwork was copied. Its faint antialiasing fringes are included in the bounds, so top margins need not equal the source geometric endpoints.', '',
-             '| Icon | Canvas | Inclusive artwork bounds | Top margin | Bottom margin |',
-             '|---|---|---|---:|---:|']
+    lines = ['# CASIO Main Menu icon redesign — v0.1.0-beta.2', '',
+        'The user-supplied 92×64 screenshot was visually compared with the existing PNG. The beta.1 generator used 11×11 wall blocks and a 17×17 crate, matching the reported oversize. Its artwork ended at y46 and hardware feedback still found it close to the OS label. This milestone redraws the scene on a common grid; it is not another translation of that bitmap.', '',
+        '## Source and exact geometry', '',
+        '- Old source: `tools/make_icons.py` at public tag `v0.1.0-beta.1`; original PNG bytes are preserved as `docs/public-captures/icon-uns-before.png` and `icon-sel-before.png`.',
+        '- New source: deterministic `tools/make_icons.py`; outputs `assets/icon-uns.png` and `assets/icon-sel.png`. Both are opaque RGB, **92×64**. No external sprites, commercial Sokoban art, CASIO art, text or fonts are used.',
+        '- Shared integer grid: **8 columns × 4 rows, 10×10 px per cell**, origin `(6,2)`. Wall and crate outer footprints both fill one **10×10** cell; orange inner fill is **8×8**, inset by one pixel.',
+        '- The black player fits in a 7×8 footprint and the dark-gold hollow target in 5×5, each inside one cell. Player, crate, target occupy consecutive cells `(2,2)`, `(3,2)`, `(4,2)` (zero-based).',
+        '- Walls use flat dark green outlines/green fill, floor pale mint, crate orange, player black. A partial warehouse wall layout leaves open floor and avoids a heavy enclosing border. The icon scene is project-authored, not an upstream puzzle.',
+        '- Native-resolution drawing uses integer rectangles/lines/points with no antialiasing or image scaling. The selected variant changes only the surrounding background to dark green; the entire 80×40 artwork is identical, retaining player/crate/target visibility.',
+        '- New bounds are **(6,2)..(85,41)**. Top margin is **2px**, bottom margin **22px** (previously 17px). Rows 42..63 contain only the variant background. The lower edge is below the conservative limit y43.', '',
+        '## Actual packaging pipeline', '',
+        '`CMakeLists.txt::generate_g3a` passes both PNGs directly to fxgxa through `ICONS`; there is no fxconv icon transformation. Installed `GenerateG3A.cmake` maps these to `--icon-uns` and `--icon-sel`. `tools/package.sh` repeats that packaging deterministically when SOURCE_DATE_EPOCH is set. fxgxa stores two 92×64×2 RGB565 records (11,776 bytes each) at offsets 0x1000 and 0x4000. Their exact bytes are checked against the PNGs. Icons are G3A metadata, not runtime graphics/cache.', '',
+        'App name `SOKOBAN`, internal ID `@SOKOBAN`, and save namespace remain unchanged. The OS name comes from separate G3A name/language-label metadata, not icon text. CASIO package version advances to `00.01.0002`; the game/runtime payload is unchanged.', '',
+        '## Measured assets and placement reference', '',
+        'DIFF EQ was inspected read-only, including its 92×64 normal/selected PNGs, 4× supersampled generator and CMake declarations. Its generator explicitly leaves the lower title strip free. All faint antialiasing pixels count in the bounds below. It is a placement reference only; none of its art is incorporated into SOKOBAN. This redesign deliberately uses a larger lower margin than that reference because of the reported physical overlap.', '',
+        '| Variant / stage | Inclusive bounds | Top px | Bottom px | PNG bytes |',
+        '|---|---|---:|---:|---:|']
     for variant, stages in result['variants'].items():
-        for stage, values in stages.items():
-            bounds = values['artwork_bounds_inclusive']
-            lines.append(f"| {variant}: {stage} | 92×64 | ({bounds[0]}, {bounds[1]})..({bounds[2]}, {bounds[3]}) | {values['top_margin']} | {values['bottom_margin']} |")
-    lines += ['', '[Actual before/after preview](public-captures/icon-before-after.png) uses only SOKOBAN pixels at 3× nearest-neighbor enlargement. The original PNG snapshots were preserved before regeneration. Numeric results and input hashes are in `ICON_AUDIT.json`.', '',
-              'Reproduce with `python3 tools/make_icons.py` then `python3 tools/icon_audit.py`. Optional `--reference-dir "$SOKOBAN_DIFFEQ_REFERENCE"` refreshes reference measurements without changing that repository. `python3 tools/icon_audit.py --check` needs no DIFF EQ checkout. Tests verify every artwork pixel survives the translation, both RGB565 package icon records match the new PNGs, and the new safe margins are blank.', '',
-              '**HARDWARE RETEST REQUIRED:** actual CASIO Main Menu icon/label separation, selected and unselected contrast, and top-edge visibility. The 3 px change is measurable; host preview alone cannot establish whether the physical OS label gap is sufficient.']
-    return '\n'.join(lines) + '\n'
+        for stage, v in stages.items():
+            b=v['artwork_bounds_inclusive']
+            lines.append(f"| {variant} / {stage} | ({b[0]},{b[1]})..({b[2]},{b[3]}) | {v['top_margin']} | {v['bottom_margin']} | {v['bytes']} |")
+    lines += ['', '## Previews and reproduction', '',
+        '- [Current beta.1 versus new beta.2, both variants](public-captures/icon-before-after.png).',
+        '- [New unselected, 8× nearest-neighbor](public-captures/icon-uns-8x.png); [selected, 8×](public-captures/icon-sel-8x.png).',
+        '- [Illustrative label-safe-area mock](public-captures/icon-label-safe-mock.png). The tinted reserve and sample label are explanatory overlays, absent from both icon assets. The sample y52 label is not a measured or emulated CASIO label position.',
+        '- An optional actual DIFF EQ/SOKOBAN side-by-side is generated locally as `docs/captures/icon-diffeq-placement.png`. Reference artwork stays out of the public snapshot; the numeric evidence above is public.', '',
+        'Run `python3 tools/make_icons.py`, then `python3 tools/icon_audit.py`. Optional `--reference-dir "$SOKOBAN_DIFFEQ_REFERENCE"` refreshes read-only reference measurements and the local comparison. `--check` verifies committed numeric/Markdown evidence without needing that checkout. SHA-256 and PNG color counts are in `ICON_AUDIT.json`.', '',
+        'Eight icon tests cover deterministic PNGs, opaque flat palette, native canvas, clear top/bottom margins, equal measured wall/crate footprints, all-cell grid alignment, player/crate/goal placement, preserved selected artwork, absence of text drawing, audit dimensions and both native RGB565 records. No runtime game/UI/input/storage source is changed.', '',
+        '**HARDWARE TEST REQUIRED:** actual OS-label gap, no top clipping, natural wall/crate scale, identifiable player/goal/push-puzzle scene, selected/unselected contrast, relative size beside other apps and separation comparable to DIFF EQ. Host geometry and mock labels cannot establish physical OS acceptance. See the priority icon checks in [HARDWARE_RETEST.md](HARDWARE_RETEST.md).']
+    return '\n'.join(lines)+'\n'
 
 
 def main():
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--reference-dir', type=Path)
-    parser.add_argument('--check', action='store_true')
-    args = parser.parse_args()
-    result = report(args.reference_dir)
-    output = ROOT / 'docs/ICON_AUDIT.json'
+    parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--reference-dir',type=Path)
+    parser.add_argument('--check',action='store_true')
+    args=parser.parse_args()
+    result=report(args.reference_dir)
+    output=ROOT/'docs/ICON_AUDIT.json'
     if not args.reference_dir and output.exists():
-        previous = json.loads(output.read_text())
-        for variant in ('uns', 'sel'):
-            reference = previous['variants'][variant].get('diffeq_reference')
-            if reference:
-                result['variants'][variant]['diffeq_reference'] = reference
-    outputs = {output: json.dumps(result, indent=2) + '\n', ROOT / 'docs/ICON_AUDIT.md': markdown(result)}
-    for path, content in outputs.items():
+        previous=json.loads(output.read_text())
+        for variant in ('uns','sel'):
+            if 'diffeq_reference' in previous['variants'][variant]:
+                result['variants'][variant]['diffeq_reference']=previous['variants'][variant]['diffeq_reference']
+    for path,content in {output:json.dumps(result,indent=2)+'\n',ROOT/'docs/ICON_AUDIT.md':markdown(result)}.items():
         if args.check:
-            if not path.exists() or path.read_text() != content:
+            if not path.exists() or path.read_text()!=content:
                 parser.error(f'stale {path.relative_to(ROOT)}')
         else:
-            path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text(content)
     if not args.check:
-        preview()
-    print(json.dumps(result, indent=2))
+        previews(args.reference_dir)
+    print(json.dumps(result,indent=2))
 
 
-if __name__ == '__main__':
+if __name__=='__main__':
     main()

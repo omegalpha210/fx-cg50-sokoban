@@ -1,11 +1,33 @@
-# Hardware retest — v0.1.0-beta.1
+# Hardware retest — v0.1.0-beta.2
 
 The owner reports that basic play worked on an fx-CG50 and that the prior icon
 appeared too low beside the OS label. These are user observations, not a complete
-hardware acceptance run. The new navigation/layout/icon/power changes below are
+hardware acceptance run. The beta.1 icon still appeared close to the OS label and
+its crate looked oversized. Beta.2 redesigns only the icon; its new geometry and
+the outstanding navigation/layout/power checks below are
 **HARDWARE RETEST REQUIRED**. Record calculator/OS version, local package SHA-256,
 tester/date and PASS / FAIL / NOT RUN for each step. Preserve existing save files
 before intentionally testing corruption or storage failure.
+
+## Priority: redesigned icon (all NOT RUN on hardware)
+
+1. Confirm the new 10px-grid SOKOBAN icon appears in CASIO Main Menu.
+2. Check the crate has the same visible outer size as one wall cell.
+3. Confirm the orange crate does not look oversized, including beside adjacent walls.
+4. Identify the small black player without relying on the enlarged host preview.
+5. Identify the hollow goal marker separately from the crate.
+6. Confirm player → crate → target reads as a Sokoban push puzzle.
+7. Verify a clear physical gap between artwork and the OS `SOKOBAN` label.
+8. Check there is no top clipping or lost wall/player pixel.
+9. Select and deselect the app; ensure the artwork and selection remain visible.
+10. Compare visual size with adjacent Main Menu icons; it should not look too small.
+11. Compare with DIFF EQ: artwork and OS label should read as separate elements.
+
+Current host bounds are `(6,2)..(85,41)` in 92×64, leaving 22 lower rows. These
+measurements do not establish the OS label position. The label mock is illustrative,
+not a firmware rendering. Only after hardware feedback, consider a further 1–2px
+shift or a small grid-preserving layout adjustment if the gap is still insufficient.
+Do not mark these checks passed from PNG/package tests.
 
 ## Navigation
 
@@ -33,7 +55,7 @@ before intentionally testing corruption or storage failure.
 
 ## Main Menu icon
 
-16. Both selected/unselected SOKOBAN artwork appear3px higher, without shrinking.
+16. Both selected/unselected SOKOBAN icons use the new equal-size wall/crate grid.
 17. Actual OS `SOKOBAN` label is visually separate from the artwork's lower edge.
 18. No top clipping or loss of important pixels; contrast is acceptable in both
     selection states. Host92×64 PNG inspection cannot establish this OS spacing.

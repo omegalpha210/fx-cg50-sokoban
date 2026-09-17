@@ -4,9 +4,10 @@
 
 A native C / fxSDK / gint Sokoban add-in: four groups of 15 levels, five-step
 undo, independent per-level automatic progress, and safe MENU / power-off
-checkpoints. **v0.1.0-beta.1 — HARDWARE RETEST REQUIRED.** The owner reports
-basic play working on an fx-CG50; the new navigation, layout, icon placement and
-power-off paths still need physical testing.
+checkpoints. **v0.1.0-beta.2 — HARDWARE RETEST REQUIRED.** This update redesigns
+the app icon on a common 10×10 pixel grid, with equal wall/crate footprints and
+a 22-pixel lower margin. The owner reports basic play working on an fx-CG50;
+the icon and remaining navigation/layout/power checks still need physical testing.
 
 ![Actual application renderer](docs/public-captures/overview.png)
 
@@ -16,7 +17,7 @@ not one of the referenced upstream puzzles. They are not calculator photographs.
 
 ## Source-only prerelease
 
-The [GitHub prerelease](https://github.com/omegalpha210/fx-cg50-sokoban/releases/tag/v0.1.0-beta.1)
+The [GitHub prerelease](https://github.com/omegalpha210/fx-cg50-sokoban/releases/tag/v0.1.0-beta.2)
 publishes source and original illustration assets. **The upstream 60-map text,
 generated map pack, map screenshots, and bundled `SOKOBAN.g3a` are not distributed.**
 The maps are obtained from the referenced upstream source, but redistribution
@@ -78,7 +79,10 @@ and records failure in RAM before proceeding. See the [user guide](docs/USER_GUI
 
 ## Validation and remaining checks
 
-The engine, save-format version1 and map topology are unchanged by this UI update.
+The engine, UI, controls, save-format version1 and map topology are unchanged
+from beta.1 by this icon-only update. Both opaque 92×64 icon variants use the
+same original artwork; the selected variant changes its surrounding background.
+See the [icon geometry and previews](docs/ICON_AUDIT.md).
 Host tests and UBSan, strict SH compile/link, package checks, whole-pack integrity,
 mock native storage/power ordering, and shared-renderer audits are run locally.
 The gameplay header's 24 pixels now expand the board viewport: 48 levels improve,

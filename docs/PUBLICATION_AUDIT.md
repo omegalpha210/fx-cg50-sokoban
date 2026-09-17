@@ -56,6 +56,13 @@ independent clean source snapshot with no original commit ancestry. Audit every
 file and all reachable history before any remote publication. Ignore patterns are
 a second guard, not a way to remove already tracked content.
 
+The initial clean public snapshot is already published as `v0.1.0-beta.1`.
+The beta.2 icon update preserves that public commit as its parent; it does not
+create another root or import local development history. Audit the allowlisted
+overlay in a checkout of the existing public repository, rebuild it with ignored
+local inputs, then append a normal commit and a new prerelease tag. Map policy
+and all exclusions above remain unchanged.
+
 Do not substitute a repeated test fixture as the product's real 60-level pack.
 It exists only for distributable host-rendered screenshots and tests. Ordinary
 runtime map loading and local 60-map data remain unchanged.

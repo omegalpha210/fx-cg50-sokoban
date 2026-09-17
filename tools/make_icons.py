@@ -1,40 +1,75 @@
 #!/usr/bin/env python3
-"""Original project geometry, no external sprites or icon/font assets.
+"""Original 10px-grid warehouse icon. No imported artwork, fonts or text.
 
-Keep the 92×64 canvas and move the original geometry up three pixels. A one-pixel
-upper margin is retained; all seventeen bottom rows are reserved for visual
-separation from the CASIO OS label. No app-name text is baked into the artwork.
+Every wall and crate has the same 10x10 outer footprint. Player and goal stay
+inside that grid. Draw directly at native resolution with opaque flat colors;
+there is no resampling/antialiasing step. Rows 42..63 are a clear OS-label margin.
 """
 from pathlib import Path
 from PIL import Image, ImageDraw
 
 ROOT = Path(__file__).resolve().parents[1]
-ARTWORK_DY = -3
+CANVAS = (92, 64)
+TILE = 10
+ORIGIN = (6, 2)
+# An original icon scene, not a map from the upstream puzzle pack.
+SCENE = (
+    'WWWWWW..',
+    'W......W',
+    'W.PCT..W',
+    'WWW.....',
+)
+PALETTE = {
+    'floor': '#d7eddb', 'wall_edge': '#195e3d', 'wall': '#2d8e57',
+    'crate_edge': '#9d530d', 'crate': '#fba437', 'crate_cross': '#bd6915',
+    'player': '#000000', 'goal': '#67451c',
+}
+BACKGROUNDS = ('#ffffff', '#16372c')
 
 
-def draw_icon(selected=False, vertical_offset=ARTWORK_DY):
-    im = Image.new('RGB', (92, 64), '#16372c' if selected else 'white')
-    d = ImageDraw.Draw(im)
+def cell_bounds(column, row):
+    """Inclusive pixel bounds shared by every logical cell."""
+    x, y = ORIGIN[0] + column * TILE, ORIGIN[1] + row * TILE
+    return x, y, x + TILE - 1, y + TILE - 1
 
-    def box(coords):
-        x1, y1, x2, y2 = coords
-        return x1, y1 + vertical_offset, x2, y2 + vertical_offset
 
-    d.rounded_rectangle(box((8, 4, 83, 49)), radius=5, fill='#d7eddb', outline='#195e3d', width=2)
-    for x, y in ((12, 8), (25, 8), (38, 8), (51, 8), (64, 8), (12, 21), (12, 34), (25, 34), (64, 34)):
-        d.rectangle(box((x, y, x+10, y+10)), fill='#2d8e57', outline='#1b5838')
-    d.rectangle(box((43, 23, 59, 39)), fill='#fba437', outline='#9d530d', width=2)
-    d.line(box((46, 26, 56, 36)), fill='#bd6915', width=2)
-    d.line(box((56, 26, 46, 36)), fill='#bd6915', width=2)
-    d.ellipse(box((29, 22, 34, 27)), fill='black')
-    d.rectangle(box((28, 29, 35, 34)), fill='black')
-    d.ellipse(box((70, 22, 74, 26)), fill='#67451c')
-    return im
+def draw_tile(symbol):
+    """Return one opaque 10x10 tile, including its floor if unoccupied."""
+    if symbol not in '.WPCT':
+        raise ValueError(f'Unknown icon tile: {symbol}')
+    tile = Image.new('RGB', (TILE, TILE), PALETTE['floor'])
+    d = ImageDraw.Draw(tile)
+    if symbol in 'WC':
+        edge, fill = ('wall_edge', 'wall') if symbol == 'W' else ('crate_edge', 'crate')
+        d.rectangle((0, 0, 9, 9), fill=PALETTE[edge])
+        d.rectangle((1, 1, 8, 8), fill=PALETTE[fill])
+        if symbol == 'C':
+            d.line((2, 2, 7, 7), fill=PALETTE['crate_cross'])
+            d.line((7, 2, 2, 7), fill=PALETTE['crate_cross'])
+    elif symbol == 'P':
+        d.rectangle((4, 1, 6, 3), fill=PALETTE['player'])
+        d.rectangle((3, 4, 7, 7), fill=PALETTE['player'])
+        d.rectangle((2, 5, 8, 6), fill=PALETTE['player'])
+        d.point((3, 8), fill=PALETTE['player'])
+        d.point((7, 8), fill=PALETTE['player'])
+    elif symbol == 'T':
+        # A small hollow diamond; visually distinct from the filled orange crate.
+        d.line(((5, 3), (7, 5), (5, 7), (3, 5), (5, 3)), fill=PALETTE['goal'])
+    return tile
+
+
+def draw_icon(selected=False):
+    image = Image.new('RGB', CANVAS, BACKGROUNDS[bool(selected)])
+    for row, cells in enumerate(SCENE):
+        for column, symbol in enumerate(cells):
+            x, y, _, _ = cell_bounds(column, row)
+            image.paste(draw_tile(symbol), (x, y))
+    return image
 
 
 def main():
-    for selected in (False, True):
-        draw_icon(selected).save(ROOT / 'assets' / ('icon-sel.png' if selected else 'icon-uns.png'))
+    for selected, variant in ((False, 'uns'), (True, 'sel')):
+        draw_icon(selected).save(ROOT / 'assets' / f'icon-{variant}.png')
 
 
 if __name__ == '__main__':

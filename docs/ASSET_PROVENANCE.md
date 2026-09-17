@@ -88,6 +88,16 @@ Wall/crate patterns, goal dots, player silhouettes, menu geometry and SOKOBAN
 package icons are original project geometry. The DIFF EQ icon was inspected only
 as a placement reference; its artwork was not copied into the SOKOBAN icon.
 
+For v0.1.0-beta.2, `tools/make_icons.py` generates a new original warehouse scene
+on one 10×10 pixel grid. No third-party sprite, copied commercial Sokoban icon,
+or CASIO icon art is used. The 92×64 RGB assets and player/crate/target layout
+are created in this project and covered by its MIT license. The prior project
+icons are retained only for audit comparisons. DIFF EQ placement previews that
+contain its actual artwork remain local in excluded `docs/captures`; public
+icon audit output retains numeric reference measurements and SOKOBAN artwork.
+The icon change supplies no new map-license evidence and changes none of the
+existing map/bundled-binary redistribution restrictions.
+
 Public UI examples use the actual application renderer with an original project
 test layout. They must be labeled as host-rendered demonstrations, not as original
 pack levels, calculator photographs or CPU-emulator captures. Main and numbered

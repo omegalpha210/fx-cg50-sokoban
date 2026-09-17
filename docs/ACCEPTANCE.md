@@ -1,144 +1,122 @@
-# Acceptance — v0.1.0-beta.1
+# Acceptance — v0.1.0-beta.2
 
-Navigation, gameplay layout, icon placement and safe power-off changes are
-implemented. The eligible GitHub prerelease is **source-only**: original code,
-permitted font/utility notices and original illustration fixtures. Upstream map
-redistribution remains unconfirmed, so no bundled `.g3a`, map pack or upstream
-map screenshot is a public release asset. See [publication audit](PUBLICATION_AUDIT.md).
+This milestone redesigns only the CASIO Main Menu icon and updates its generator,
+geometry tests, previews, documentation and package/release version. The engine,
+60 maps, movement/UNDO, saves, SHIFT+AC/ON, menus, gameplay renderer and MENU/EXIT
+lifecycle are unchanged from beta.1. Both native icon records use the new artwork.
 
-The owner reports prior basic play working on an fx-CG50 and an icon/OS-label
-spacing problem. New behavior is host/mock tested and compiled; actual revised
-LCD layout, OS label gap and physical OFF/ON remain **HARDWARE RETEST REQUIRED**.
+The eligible prerelease remains **source-only**. Original code/icons are MIT;
+separately identified dependencies retain their notices. Upstream-map redistribution
+is still unconfirmed. No raw/generated map pack, bundled `.g3a`, its release
+checksum, or upstream-map screenshot is published. See [publication audit](PUBLICATION_AUDIT.md).
 
-## Preserved baseline and scope
+## Baseline and unchanged runtime
 
-Development began from `main` at `20d36ce6ebdb9c45da2614b6cb4febb1834bee81`,
-with a clean working tree and no existing tags or remotes. Existing host suites
-passed before changes. DIFF EQ was inspected read-only for getkey power handling,
-MENU/Fugue, icons and clean publication policy. Its source/history/output are
-unchanged; no existing toolchain was reinstalled or upgraded.
+The clean local baseline was `main` at `bf88d8bf796e59aed21cc5569b576c1acc6da7a6`;
+the verified public main/tag beta.1 was `b817f1057d8c591aed739dcb8d64031da8d08b32`.
+No newer public version or conflicting beta.2 tag existed at the initial check.
+Existing public history is retained, with a normal descendant update and new tag.
+Local development history remains private because it includes retained map data.
 
-Movement, push/goal rules, five-step UNDO, completion, two-slot transaction,
-map topology/hash and save-format version1 are unchanged. The public source uses
-an independent clean history because the prior local commit includes maps and
-machine-specific artifacts. Its original ancestry is not pushed.
+`src/`, `include/` and map assets have no diff from the local baseline. The clean
+native `sokoban.bin` remains byte-identical: 46,976 bytes, SHA-256
+`7e92e0d3c4927141ece4172a5e91ce2030451c8ef9b109f0f86358498fbcbfed`.
+Only G3A icon/version metadata and corresponding checksums change in the package.
+App name `SOKOBAN`, internal ID `@SOKOBAN`, save names and format version 1 remain.
+DIFF EQ was inspected read-only; its source/output/history remain independent.
+The existing toolchain was reused without reinstalling or upgrading it.
 
-## Navigation
+## Icon acceptance
 
-A single small selector helper now implements RIGHT as next numeric item and
-LEFT as previous, wrapping the entire2×2 or5×3 grid. Row ends continue into the
-next/previous row. UP/DOWN preserve the column and wrap vertically. Numeric Main
-shortcuts and EXE/F6 OPEN remain. Gameplay LEVEL-/+ remains separately bounded
-within1..60, including group boundaries.
+The supplied 92×64 image visually matches the old asset. Old wall blocks were
+11×11px, while the crate was 17×17px. Its lower edge y46 left 17 clear rows, and
+hardware feedback still found it close to the OS label. The new original scene
+uses an 8×4 grid of 10×10 cells at `(6,2)`, with player → crate → target in adjacent
+cells. It is redrawn geometry, not a translation or downscaled previous bitmap.
 
-The workflow suite covers forward/reverse Main cycles, vertical columns and
-all four level groups'5→6,10→11,15→1 equivalents and reverse boundaries, plus
-existing INIT/completion/save/MENU/HOLD regressions.
-
-## Gameplay layout and icon
-
-The gameplay-only24px title is gone; no group title is relocated elsewhere.
-Main/level headers remain. HUD shifts up24px with the existing font. The board
-viewport expands from `(124,28) 268×172` to `(124,4) 268×196`, remains square-tiled
-and centered on both axes, and stops before the unchanged softkey strip.
-Gameplay INIT/win panels center at y102 in the new usable rectangle.
-
-|60-map measurement|Before|After|
+| Measure | beta.1 | beta.2 |
 |---|---:|---:|
-|Minimum tile|8px|9px|
-|Maximum tile|17px|19px|
-|Strict width bottleneck|9|14|
-|Strict height bottleneck|48|36|
-|Equal integer capacities|3|10|
+| Canvas, both opaque RGB variants | 92×64 | 92×64 |
+| Wall outer footprint | 11×11 | 10×10 |
+| Crate outer footprint | 17×17 | 10×10 |
+| Crate orange inner fill | 13×13 | 8×8 |
+| Inclusive artwork bounds | (8,1)..(83,46) | (6,2)..(85,41) |
+| Top margin | 1px | 2px |
+| Bottom margin | 17px | 22px |
+| Normal PNG bytes | 658 | 478 |
+| Selected PNG bytes | 652 | 480 |
+| Native RGB565 bytes per variant | 11,776 | 11,776 |
 
-**48 levels improve;12 remain unchanged; maximum gain+2px.** Improved IDs:
-2,5,6,7,8,9,10,11,12,14,15,16,17,19,20,21,22,24,25,26,28,30,31,32,33,34,35,
-36,37,38,39,40,41,42,43,44,46,47,48,49,50,51,53,54,55,56,58,59.
-8→9 IDs:10,19,20,22,30,54,58,59. 9→10 IDs:9,24,36,39,42,44,53.
-The29×20 level59 improves8→9: previously height-limited, now tied at integer9.
-Full per-level geometry is in [LAYOUT_AUDIT.md](LAYOUT_AUDIT.md).
+Wall/crate footprints are measured as fully occupied equal-size cells. The black
+player and small hollow goal fit within one cell each. Flat colors and integer
+coordinates avoid antialiasing. No text, external sprite, commercial Sokoban art
+or CASIO icon artwork is used. Both variants have identical 80×40 artwork;
+selected changes only the surrounding background. There is no enclosing thick
+rounded frame. Bottom rows 42..63 are plain background.
 
-Both92×64 opaque RGB icons contain geometry and no baked-in SOKOBAN text.
-The artwork bounds moved from inclusive `(8,4)..(83,49)` to `(8,1)..(83,46)`;
-bottom clear margin14→17px, top1px, no resizing or clipping. DIFF EQ reference
-bounds were unselected `(3,3)..(87,49)`, selected `(4,2)..(87,49)`. Only placement
-was referenced. fxgxa icon pixels and separate app-name metadata were verified.
-See [icon audit](ICON_AUDIT.md) and [comparison](public-captures/icon-before-after.png).
-
-## Power-off ordering
-
-Installed gint2.11.0 `getkey_opt()` handles fresh SHIFT+AC/ON without ALPHA via
-`gint_poweroff(true)`; DIFF EQ inherits this supported path. SOKOBAN retains raw
-keydev events so the app can checkpoint first. Tap/held SHIFT plus fresh AC/ON
-works before every screen/modal dispatcher, including save errors. SHIFT/AC alone
-and repeated HOLD do not request OFF. Modifiers are cleared and held keys gated
-across transitions and ON resume.
-
-Dirty state performs one synchronous existing two-slot checkpoint/save attempt,
-including close/readback, before OFF. Clean state writes nothing. Failure keeps
-dirty RAM/generation and `power_save_failed`, then proceeds with OFF without a
-blocking modal. No interrupt I/O or forced mid-write power cut was added. gint
-may return to the suspended execution after ON; a true new launch starts Main
-and loads the existing saves. See [POWER.md](POWER.md) for exact API references.
+The direct PNG → fxgxa RGB565 pipeline is preserved; icons are packaged metadata,
+not runtime graphics or a new icon cache. The separate CASIO name fields still
+supply `SOKOBAN`. [ICON_AUDIT.md](ICON_AUDIT.md) records sources, precise grid,
+DIFF EQ numeric reference, hashes, normal/selected comparison, 8× nearest-neighbor
+previews and a clearly illustrative label-safe-area mock. The optional actual
+DIFF EQ side-by-side is local-only, outside the public snapshot.
 
 ## Automated evidence
 
-|Check|Result|
+Native and host build directories were empty for the clean regression run.
+
+| Check | Result |
 |---|---|
-|Python|**34 passed**: existing24 plus icon3, layout3 and publication safety4.|
-|C/UBSan|**7/7 suites passed**: engine, storage, workflow, renderer, native BFile, power and public renderer.|
-|Engine|359,247 assertions;76,275 legal randomized moves/undo and1,500 pushes across60 maps; original fixture solution.|
-|Workflow|895 assertions; new horizontal/vertical navigation plus retained lifecycle tests.|
-|Power|Actual `src/main.c` with installed-keycode mocks plus real input/app/codec/two-slot transaction; all screens, chord order, clean no-write, one-shot, failure and serialization-before-OFF.|
-|Native storage|297 BFile calls within9 complete mocked OS world switches.|
-|Save/map integrity|All60 independent states/history round-trip; truncation/checksum/occupant/undo/map-hash rejection and fallback preserved. Pinned map pack unchanged.|
-|SH|Strict compile/link succeeds with **0 compiler warnings**; `-Wall -Wextra -Werror`, stack-frame threshold2048 and stack-usage output.|
-|Package|**15 checks passed**; both encoded RGB565 icon records match current PNGs byte-for-byte; app name/identity unchanged.|
-|Captures|**87 full-pack frames** plus full60/review contact sheets; bounds/centering/title/gutter checks. **5 public frames** link only the independently authored fixture.|
-|ASan|Not verified: unchanged Apple runtime hangs before main, including an empty program. UBSan works; no reinstall attempted.|
+| Python | **39 passed**: original 24, icon 8, layout 3, publication safety 4. |
+| Icon geometry | Deterministic regeneration; 92×64 RGB; flat palette; safe bounds; every cell on the same 10px grid; equal actual wall/crate footprints; player/goal placement; selected visibility; no text drawing. |
+| C/UBSan | **7/7 suites passed**: engine, storage, workflow, renderer, native BFile, power and public renderer. |
+| Engine | 359,247 assertions; 76,275 legal randomized moves/undo and 1,500 pushes across 60 maps. |
+| Workflow | 895 assertions, retaining Main/all-group row-major navigation and lifecycle behavior. |
+| Native storage/power | 297 BFile calls within 9 complete mocked OS transactions; save-before-OFF, failure, chords and one-shot behavior passed. |
+| SH | Clean strict compile/link; **0 compiler warnings**. |
+| Package | **15 checks passed**; normal and selected RGB565 records match the new PNGs byte-for-byte. |
+| Maps/save | Unchanged pinned pack, all 60 state/history round-trips and prior corruption/fallback coverage. |
+| Renderer | 87 local full-pack captures and both contact sheets regenerated identically; 5 public original-fixture views remain unchanged. |
+| ASan | Not verified: this host runtime stalls before main, including an empty program. UBSan passes. |
 
-All60 original maps pass structural checks, not a proof that all60 were solved.
-Local full-map captures are excluded from public Git history. Public figures use
-the actual shared renderer and are labeled as original-layout host fixtures.
-Physical calculator execution is not inferred from these tests.
+The same full checks also passed in the exact public candidate, hydrated locally
+with pinned inputs and rebuilt from empty native/host build directories. Icon
+regeneration is byte-identical; its native payload and full package match the
+development build. Generated maps and build outputs stay ignored. Public source
+ZIP contents are verified against the tag after publication; binary upload/download
+verification is not applicable while map-bundled binary distribution is withheld.
 
-## Memory and local package
+## Native size and local package
 
-|Native measurement|Baseline|Updated|
+| Measurement, bytes | beta.1 | beta.2 |
 |---|---:|---:|
-|ELF text|46,304|46,512|
-|data|464|464|
-|BSS|12,384|12,400|
-|Largest project single frame|212|212|
-|Active state|92|92|
-|Five undo bytes|5|5|
-|Entire progress|5,648|5,648|
-|Entire app|5,804|5,812|
-|Save workspace|5,520|5,520|
-|Maximum save/slot|3,336|3,336|
-|Local `.g3a`|75,444|75,652|
+| ELF text | 46,512 | 46,512 |
+| data | 464 | 464 |
+| BSS | 12,400 | 12,400 |
+| Largest project single stack frame | 212 | 212 |
+| Active state | 92 | 92 |
+| Entire app | 5,812 | 5,812 |
+| Entire progress | 5,648 | 5,648 |
+| Save workspace | 5,520 | 5,520 |
+| Maximum save per slot | 3,336 | 3,336 |
+| Local `.g3a` | 75,652 | 75,652 |
 
-No application heap allocation, extra runtime framebuffer, board copy or icon
-cache was added. gint still owns its existing startup VRAM allocation. The212-byte
-frame is not total stack peak or measured remaining heap. [MEMORY.md](MEMORY.md)
-contains cross-compiled sizes and limitations.
+No new runtime memory, framebuffer, board copy or icon cache is introduced.
+Single-frame size is not total stack usage or free heap. See [MEMORY.md](MEMORY.md).
 
-The updated local build is `dist/SOKOBAN.g3a`,75,652 bytes, SHA-256:
-`d3b6b564e951e19469c6c7f605daff3fd31f260818f3a7fd6f895adf1c46e17d`.
-This identifies local validation output, **not an available release asset**.
-`SOURCE_DATE_EPOCH=1789660800` fixes the package header date for source-candidate
-comparison. Save magic/hash/version and `@SOKOBAN` namespace remain unchanged;
-CASIO numeric package version is now `00.01.0001` for beta1.
+The final local `dist/SOKOBAN.g3a` is 75,652 bytes, SHA-256
+`1b894f0ffe6c18ea40df0cda0c084dcd44c1f72818a6065e42d2f3756277f731`.
+`dist/SHA256SUMS.txt` agrees. `SOURCE_DATE_EPOCH=1789660800` fixes header time for
+candidate/development comparison. Numeric CASIO version is `00.01.0002`.
+This hash identifies local validation output, not a public binary release asset.
 
-The clean source-only candidate was independently hydrated with pinned inputs
-and rebuilt from empty native/host build directories. All checks above passed
-again there; its package matches the development artifact byte-for-byte and by
-SHA-256. Generated maps/binaries remain ignored. The clean build also verified
-automatic creation of the package output directory and TLS-verified input fetch.
-Public source archive verification replaces binary release-asset
-re-download verification, which is withheld with the binary itself. Actual
-repository/tag/commit results are reported in the delivery record.
+## Remaining physical checks
 
-Follow [HARDWARE_RETEST.md](HARDWARE_RETEST.md) for all38 navigation, layout, icon,
-power, persistence and resource checks. Updated real OFF/ON, physical key timing,
-Fugue behavior, LCD readability and stack/heap headroom remain unverified.
+The owner reported prior basic gameplay working. No new physical icon acceptance
+is claimed. **HARDWARE TEST REQUIRED:** 11 priority icon checks cover equal apparent
+wall/crate size, player/goal recognition, push-puzzle identity, actual OS-label
+gap, no top clipping, both selection states, relative size among Main Menu apps,
+and separation comparable to DIFF EQ. Remaining beta.1 physical navigation,
+LCD, OFF/ON, persistence and memory checks are retained in
+[HARDWARE_RETEST.md](HARDWARE_RETEST.md). Host mock label placement is illustrative,
+not an OS screenshot or proof of a sufficient real label gap.

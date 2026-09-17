@@ -10,7 +10,7 @@ if [[ -n "${SOURCE_DATE_EPOCH:-}" ]]; then
   SOKOBAN_DATE_ARGS=("--date=$SOKOBAN_PACKAGE_DATE")
 fi
 fxgxa --g3a "${SOKOBAN_DATE_ARGS[@]}" build-cg/sokoban.bin -o dist/SOKOBAN.g3a -n SOKOBAN \
-  --internal=@SOKOBAN --version=00.01.0001 \
+  --internal=@SOKOBAN --version=00.01.0002 \
   --icon-uns=assets/icon-uns.png --icon-sel=assets/icon-sel.png
 "$SOKOBAN_PYTHON" tools/verify_g3a.py dist/SOKOBAN.g3a
 "$SOKOBAN_PYTHON" - <<'PY'

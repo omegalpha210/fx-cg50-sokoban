@@ -8,7 +8,7 @@ path is embedded in the script. Detailed measurements are in
 `build-cg/memory-report.json`.
 
 ELF: `build-cg/sokoban`. SHA-256:
-`5e48c03b2f33741ea99bdb3092b0877e491e37bbc16ca173c134dfa81266546f`.
+`0fb7ffc1f8856d5f7844346921eeedd2a328950c3e16aa5a33ed865134b9d205`.
 
 ## Linked sections
 
