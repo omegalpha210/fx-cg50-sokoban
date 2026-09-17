@@ -1,0 +1,40 @@
+[
+  {
+    "project": "gint",
+    "source_path": "README.md",
+    "local_path": "gint-README.md",
+    "sha256": "5543ab169ac7fec9721eecbda9c1ed4d806463126ccf6a0c5c3fbfe4454a9a9f"
+  },
+  {
+    "project": "fxsdk",
+    "source_path": "LICENSE",
+    "local_path": "fxSDK-LICENSE.txt",
+    "sha256": "849e90b1e6a3d901d8b3f4035b1c7cfd6bca75b76592c59a063980a7e6ee3a4c"
+  },
+  {
+    "project": "fxlibc",
+    "source_path": "LICENSE",
+    "local_path": "fxlibc-LICENSE.txt",
+    "sha256": "a2010f343487d3f7618affe54f789f5487602331c0a8d03f49e9a7c547cf0499"
+  },
+  {
+    "project": "fxlibc",
+    "source_path": "3rdparty/grisu2b_59_56/LICENSE",
+    "local_path": "fxlibc-Grisu2b-LICENSE.txt",
+    "sha256": "0d764e307ca5b6688150463f8994ba0ab3c4ef188c93d2aa9eca125efa8d19e6"
+  },
+  {
+    "project": "OpenLibm",
+    "source_path": "LICENSE.md",
+    "local_path": "OpenLibm-LICENSE.md",
+    "sha256": "b1843fbf5b03f519a5f0a44fce751bdd1022ae7148614923f9d6293e17a18b17"
+  },
+  {
+    "project": "DIFFEQ",
+    "revision": "8e6f8f653f246427009beabbb8190f83bd2ab4df",
+    "source_path": "LICENSE",
+    "source_url": "https://github.com/omegalpha210/fx-cg50-diffeq/blob/8e6f8f653f246427009beabbb8190f83bd2ab4df/LICENSE",
+    "local_path": "DIFFEQ-LICENSE.txt",
+    "sha256": "718245c49b1e08e328121380adb40cbf15710eb8a7098f499e3215aa30cd293b"
+  }
+]

@@ -1,0 +1,14 @@
+# Generated/local material is not licensed for bundled public redistribution.
+.local/
+build-cg/
+build-host/
+__pycache__/
+*.pyc
+.DS_Store
+dist/
+assets/maps/upstream/
+assets/maps/statistics.json
+src/maps/generated_maps.c
+docs/captures/
+docs/validation/
+docs/SPECIFICATION_KO.txt

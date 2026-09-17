@@ -1,0 +1,6 @@
+*.g3a binary
+*.png binary
+assets/maps/upstream/* -text
+# Exact third-party input/notice bytes are intentional, including padding spaces.
+assets/maps/upstream/* -whitespace
+docs/third_party/* -whitespace

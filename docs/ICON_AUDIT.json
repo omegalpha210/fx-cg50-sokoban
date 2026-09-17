@@ -1,0 +1,138 @@
+{
+  "translation_y": -3,
+  "scaling": false,
+  "baked_in_text": false,
+  "bounds_convention": "inclusive non-background pixel bounds",
+  "variants": {
+    "uns": {
+      "before": {
+        "mode": "RGB",
+        "canvas": [
+          92,
+          64
+        ],
+        "background_rgb": [
+          255,
+          255,
+          255
+        ],
+        "artwork_bounds_inclusive": [
+          8,
+          4,
+          83,
+          49
+        ],
+        "top_margin": 4,
+        "bottom_margin": 14,
+        "sha256": "979a50b8e5d1ddbed5cfd489fcc52b1f21c900a8818ad6fc526e9094ea88036f"
+      },
+      "after": {
+        "mode": "RGB",
+        "canvas": [
+          92,
+          64
+        ],
+        "background_rgb": [
+          255,
+          255,
+          255
+        ],
+        "artwork_bounds_inclusive": [
+          8,
+          1,
+          83,
+          46
+        ],
+        "top_margin": 1,
+        "bottom_margin": 17,
+        "sha256": "363cf5b1de1cd626c344199da1e26f8e063385d49b379f03c01535759f92bc71"
+      },
+      "diffeq_reference": {
+        "mode": "RGB",
+        "canvas": [
+          92,
+          64
+        ],
+        "background_rgb": [
+          255,
+          255,
+          255
+        ],
+        "artwork_bounds_inclusive": [
+          3,
+          3,
+          87,
+          49
+        ],
+        "top_margin": 3,
+        "bottom_margin": 14,
+        "sha256": "9c1f8aa2dbbdb6ff0fa9d461612afc3d1ea39ca885dafd6cd58d3c6d43150967"
+      }
+    },
+    "sel": {
+      "before": {
+        "mode": "RGB",
+        "canvas": [
+          92,
+          64
+        ],
+        "background_rgb": [
+          22,
+          55,
+          44
+        ],
+        "artwork_bounds_inclusive": [
+          8,
+          4,
+          83,
+          49
+        ],
+        "top_margin": 4,
+        "bottom_margin": 14,
+        "sha256": "c83f5194e748b0db8c1efa2aad92e7836fd70d8a3b8b8bd7c6ace024fa66cdcc"
+      },
+      "after": {
+        "mode": "RGB",
+        "canvas": [
+          92,
+          64
+        ],
+        "background_rgb": [
+          22,
+          55,
+          44
+        ],
+        "artwork_bounds_inclusive": [
+          8,
+          1,
+          83,
+          46
+        ],
+        "top_margin": 1,
+        "bottom_margin": 17,
+        "sha256": "f82095bccfcc99bd34312e8daba2e4be5d677bb9654ec0d8902844a50f8d3d50"
+      },
+      "diffeq_reference": {
+        "mode": "RGB",
+        "canvas": [
+          92,
+          64
+        ],
+        "background_rgb": [
+          22,
+          73,
+          129
+        ],
+        "artwork_bounds_inclusive": [
+          4,
+          2,
+          87,
+          49
+        ],
+        "top_margin": 2,
+        "bottom_margin": 14,
+        "sha256": "68a830c74a76313125d91c270b5fa91906ce9bca932db1234963aed5c0c09b67"
+      }
+    }
+  }
+}

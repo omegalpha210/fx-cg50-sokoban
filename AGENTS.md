@@ -1,0 +1,13 @@
+# SOKOBAN project rules
+- Work only in this independent repository. DIFF EQ at the user's existing path is read-only; never alter its source, history, outputs or save namespace.
+- Keep host-testable game logic separate from rendering, keyboard and file I/O.
+- Use an iterative screen state machine. Never recursively call screens or main().
+- Save only at safe main-thread boundaries, with the complete native filesystem transaction inside gint's OS world switch.
+- Preserve the last valid save until a replacement is written, closed, read back and validated. Never report a failed save as successful; keep RAM and provide retry/leave choices.
+- Maps are pinned local assets. Preserve upstream topology, order, symbols and metadata. Do not assume asset redistribution permission or apply a source-code license to maps.
+- Use strict compiler warnings and meaningful host tests, renderer captures and package validation. Clearly label hardware-only checks as unverified.
+- The project owner authorizes this task's public source snapshot and v0.1.0-beta.1 prerelease after validation. Keep development history local; never force-push or move a published tag.
+- Preserve SHIFT + AC/ON power-off in every UI state. Safely checkpoint dirty progress before MENU/OFF; a failed OFF save must remain failed but must not trap power-off.
+- Publish only an audited clean snapshot. Exclude private PDFs, absolute local configurations, caches/toolchains/secrets, and license-unclear maps, embedded binaries, or map screenshots. Public own-code license is MIT; third-party rights remain separate.
+- For future validated changes, keep public history intact and use a new prerelease tag if needed. Rebuild and test the exact public candidate source before publication; only upload binary assets when their redistribution conditions are established.
+- Do not embed private absolute toolchain paths in public build files; use environment variables or gitignored local configuration.

@@ -1,0 +1,38 @@
+{
+  "upstream": "https://github.com/begoon/sokoban-maps",
+  "revision": "7aacdd777e383c172fd1879b31999748d12404f1",
+  "acquired_utc": "2026-09-17",
+  "files": [
+    {
+      "path": "sokoban-maps-60-plain.txt",
+      "upstream_path": "maps/sokoban-maps-60-plain.txt",
+      "url": "https://raw.githubusercontent.com/begoon/sokoban-maps/7aacdd777e383c172fd1879b31999748d12404f1/maps/sokoban-maps-60-plain.txt",
+      "sha256": "9e4814fc9172a8aa0dcc0d049017f62d640a65c193d62dea1602ce05bcbd6f68",
+      "bytes": 26892
+    },
+    {
+      "path": "README.md",
+      "upstream_path": "README.md",
+      "url": "https://raw.githubusercontent.com/begoon/sokoban-maps/7aacdd777e383c172fd1879b31999748d12404f1/README.md",
+      "sha256": "92a329dd88b45439eddad7bb23dd9f381d61da5fb227f8dec6e9beaec575516d",
+      "bytes": 2283
+    },
+    {
+      "path": "pushermaps.c",
+      "upstream_path": "pushermaps.c",
+      "url": "https://raw.githubusercontent.com/begoon/sokoban-maps/7aacdd777e383c172fd1879b31999748d12404f1/pushermaps.c",
+      "sha256": "1d15ec42c1ed749d0ed0d4e01932b662cc65736efe3f3554c82c5b7ab95b723e",
+      "bytes": 5844
+    }
+  ],
+  "upstream_root_entries": [
+    "Makefile",
+    "README.md",
+    "disasm",
+    "maps",
+    "pusher.exe",
+    "pushermaps.c",
+    "screenshots"
+  ],
+  "license_status": "No license file or explicit map redistribution grant found in inspected repository root, README, or extractor. Rights to maps extracted from DOS pusher remain unconfirmed."
+}

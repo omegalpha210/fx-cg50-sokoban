@@ -1,0 +1,26 @@
+{
+  "fxsdk": {
+    "url": "https://git.planet-casio.com/Lephenixnoir/fxsdk.git",
+    "commit": "09e2cf5fdab8d529217203a9a97a93facaa57311"
+  },
+  "gint": {
+    "url": "https://git.planet-casio.com/Lephenixnoir/gint.git",
+    "commit": "badbd0fd2bd8ac796fd55d49b93691741bd8a139"
+  },
+  "sh-elf-binutils": {
+    "url": "https://git.planet-casio.com/Lephenixnoir/sh-elf-binutils.git",
+    "commit": "a963554d12c0236ee10c7545daa4c422bf107de6"
+  },
+  "sh-elf-gcc": {
+    "url": "https://git.planet-casio.com/Lephenixnoir/sh-elf-gcc.git",
+    "commit": "fdbc1be7a84e88f45f9b768b7428ff33b77eb9bb"
+  },
+  "OpenLibm": {
+    "url": "https://git.planet-casio.com/Lephenixnoir/OpenLibm.git",
+    "commit": "9828d2e3f265a882af6a5bba8ffe6a00c3eeb8d7"
+  },
+  "fxlibc": {
+    "url": "https://git.planet-casio.com/Vhex-Kernel-Core/fxlibc.git",
+    "commit": "e2f458fa3d88d11b0685ae66d267730980eb65ca"
+  }
+}
