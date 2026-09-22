@@ -18,6 +18,8 @@ fxgxa -d dist/SOKOBAN.g3a > .local/validation/fxgxa-dump.txt
   build-host/test_workflow
   build-host/test_storage_native
   build-host/test_power
+  build-host/test_idle
+  build-host/test_system_power
   build-host/capture_public build-host/public-captures
   build-host/capture build-host/captures
   "$SOKOBAN_PYTHON" tools/verify_g3a.py dist/SOKOBAN.g3a

@@ -57,8 +57,8 @@ bash -c 'source tools/env.sh; "$SOKOBAN_PYTHON" tools/memory_report.py'
 Local `build-host/`, `build-cg/`, `.local/`, `dist/`, downloaded/generated map data,
 and full-map captures are not public source assets. The normal package is
 `dist/SOKOBAN.g3a`, with `dist/SHA256SUMS.txt`. Program name/internal identity
-remain `SOKOBAN` / `@SOKOBAN`. The prerelease is `v0.1.0-beta.2`; the numeric CASIO
-version field is `00.01.0002` (the CASIO field has no beta suffix).
+remain `SOKOBAN` / `@SOKOBAN`. The prerelease is `v0.1.0-beta.3`; the numeric CASIO
+version field is `00.01.0003` (the CASIO field has no beta suffix).
 
 `tools/package.sh` honors `SOURCE_DATE_EPOCH` for a fixed UTC header date. Set the
 same value when comparing local and clean-public-source builds. Without it,
@@ -82,10 +82,13 @@ Opaque 92×64 PNGs retain 22 clear lower rows; the selected state changes only
 the surrounding background. Regenerate with `python3 tools/make_icons.py`, then
 `python3 tools/icon_audit.py`. [ICON_AUDIT.md](ICON_AUDIT.md) records pixel bounds,
 8× previews, an explicitly illustrative label mock and native RGB565 verification.
-No runtime game/UI/storage/input code changes accompany this icon update.
+The beta.2 icon is retained in beta.3. The game rules, map pack and save format remain unchanged.
 
-Raw `keydev_read(...,true,NULL)` blocks while idle and retains release events.
-It cannot auto-handle MENU/OFF before a checkpoint. Arrows repeat after500ms,
+Raw `keydev_read(...,false,NULL)` retains release events and leaves MENU/OFF
+under application control. The main loop checks the RTC idle policy and sleeps
+between existing keyboard scanner interrupts. `src/idle.c` is host-testable;
+`src/system_power.c` reads settings and sets transient brightness in the OS world.
+See [POWER.md](POWER.md) for syscall sources and the CG50 level-0 hardware check. Arrows repeat after500ms,
 then every125ms, with one deterministic direction. Control keys require fresh
 presses; late HOLD after UP is rejected. The input layer recognizes tapped/held
 SHIFT plus fresh AC/ON and excludes ALPHA. See [POWER.md](POWER.md) for actual
@@ -93,7 +96,8 @@ installed gint/DIFF EQ source references and finite failure semantics.
 
 Storage remains synchronous on the main thread inside a complete OS world
 switch. `gint_poweroff(true)` runs only after the attempted transaction returns;
-OFF does not wait in an error modal. MENU retains its normal retry/leave behavior.
+OFF does not wait in an error modal; a failed checkpoint displays the retry
+dialog after ON. MENU also works from a save-error dialog.
 ON may resume the suspended execution; a true fresh main starts at Main and loads
 verified saves. No claim of real hardware power validation is made.
 

@@ -1,15 +1,49 @@
-# Hardware retest — v0.1.0-beta.2
+# Hardware retest — v0.1.0-beta.3
 
-The owner reports that basic play worked on an fx-CG50 and that the prior icon
-appeared too low beside the OS label. These are user observations, not a complete
-hardware acceptance run. The beta.1 icon still appeared close to the OS label and
-its crate looked oversized. Beta.2 redesigns only the icon; its new geometry and
-the outstanding navigation/layout/power checks below are
-**HARDWARE RETEST REQUIRED**. Record calculator/OS version, local package SHA-256,
-tester/date and PASS / FAIL / NOT RUN for each step. Preserve existing save files
-before intentionally testing corruption or storage failure.
+Earlier basic play was reported working. All new beta.3 checks below are
+**NOT RUN on hardware**. Record calculator/OS version, package SHA-256,
+tester/date and PASS / FAIL / NOT RUN. Back up both SOKOBAN save files before
+intentionally testing corruption or storage failure.
 
-## Priority: redesigned icon (all NOT RUN on hardware)
+## Priority: SYSTEM settings, dimming and auto OFF
+
+1. In SYSTEM select 10-minute OFF / 30-second backlight, normal brightness 3.
+2. Launch SOKOBAN. Confirm it dims after 30 seconds and matches the OS idle
+   brightness (CG50 level 0, darker than normal level 1).
+3. Press an unused key: brightness returns, screen/progress does not change.
+   Press an arrow after dimming: brightness returns and the normal action occurs.
+4. Repeat with normal brightness 1 and 5. Verify the stored SYSTEM level is unchanged.
+5. Repeat Backlight Duration 1 minute and 3 minutes; time the actual thresholds.
+6. Hold an unused key past the dim deadline; it must stay awake. Release and
+   verify a new full interval. Repeat held arrows against a wall.
+7. Leave Main idle: 10-minute OFF must occur without a key. Turn ON; no immediate
+   second OFF, and no stale key opens another screen.
+8. Repeat with 60-minute OFF. Repeat both OFF choices with every backlight duration.
+9. After moving/pushing/undoing, idle to OFF. ON must retain state; fresh launch
+   must load the verified checkpoint, including counters/history.
+10. Repeat idle OFF from Level Select, INIT, Congratulations, load notice and
+    SAVE FAILED. No dialog may trap OFF. Do not accept INIT or advance a level.
+11. Reproduce a safely testable save failure before OFF; ON must display
+    SAVE FAILED with retry/skip/stay, preserving RAM and the previous valid slot.
+12. From that dialog, press MENU: retry or F6 leaves without saving. Return from
+    the OS menu and confirm the original modal, especially completion, is retained.
+13. Change the two durations and normal brightness in SYSTEM via MENU. Return
+    to SOKOBAN; the new settings and a fresh interval must apply. Repeat after
+    changing the clock and across midnight.
+14. Leave the calculator OFF long enough for genuine fresh launch/RAM loss.
+    Verify successful checkpoints restore and failed checkpoints are not claimed saved.
+
+## Priority: player and control clarity
+
+1. Compare level59 and the other 9px boards with larger boards: identify the
+   blue diamond separately from dark goal dots and orange crates at native LCD size.
+2. Check all four wall palettes, normal/lowest brightness, and a player on a goal.
+3. Confirm the YOU legend matches the board marker at every scale.
+4. Empty UNDO, level1 LEVEL- and level60 LEVEL+ look disabled and do nothing.
+5. INIT reads RESTART LEVEL?; EXE restarts, EXIT cancels. Unrelated softkeys
+   disappear from all dialogs. F6 SKIP on SAVE FAILED matches its displayed choice.
+
+## Retained beta.2 icon checks (all NOT RUN on hardware)
 
 1. Confirm the new 10px-grid SOKOBAN icon appears in CASIO Main Menu.
 2. Check the crate has the same visible outer size as one wall cell.

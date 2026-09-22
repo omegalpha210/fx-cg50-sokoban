@@ -7,4 +7,5 @@ enum {KEYDEV_TR_REPEATS=0x10};
 keydev_t *keydev_std(void);
 void keydev_set_transform(keydev_t *device,keydev_transform_t transform);
 key_event_t keydev_read(keydev_t *device,bool wait,volatile int *timeout);
+bool keydev_idle(keydev_t *device,...);
 #endif

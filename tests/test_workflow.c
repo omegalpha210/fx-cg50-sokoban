@@ -398,6 +398,52 @@ static void release(SokApp *app, SokKey key)
 {
     CHECK(!sok_app_event(app, key, SE_UP));
 }
+static void test_off_failure_resume_and_menu(void)
+{
+    SokApp app;FakeHooks fake;
+    const SokModal modals[]={SM_NONE,SM_INIT,SM_WIN,SM_LOAD_NOTICE};
+    for(unsigned i=0;i<sizeof(modals)/sizeof(modals[0]);i++) {
+        init(&app,&fake);open_level(&app,1);(void)first_move(&app);
+        app.modal=modals[i];fake.fail=true;
+        CHECK(sok_app_power_off(&app));
+        CHECK(app.modal==SM_SAVE_ERROR && app.return_modal==modals[i]);
+        CHECK(app.power_save_failed && app.progress.dirty && fake.saves==1);
+        SokState before=app.game;
+        fake.fail=false;CHECK(sok_app_key(&app,SK_EXE));
+        CHECK(app.modal==modals[i] && !app.progress.dirty && fake.saves==2);
+        CHECK(board_equal(sok_get_map(1),&before,&app.game));
+    }
+    init(&app,&fake);open_level(&app,1);fake.fail=true;
+    CHECK(sok_app_key(&app,near_completion(&app)));
+    CHECK(app.modal==SM_SAVE_ERROR && app.pending==SA_WIN);
+    CHECK(sok_app_key(&app,SK_MENU));
+    CHECK(app.modal==SM_SAVE_ERROR && app.pending==SA_OS_MENU && fake.os_calls==0);
+    CHECK(sok_app_key(&app,SK_F6));
+    CHECK(app.modal==SM_WIN && fake.os_calls==1 && app.progress.dirty);
+}
+static void test_mixed_event_stress(void)
+{
+    SokApp app;FakeHooks fake;init(&app,&fake);
+    uint32_t rng=UINT32_C(0x348acde1);
+    for(unsigned i=0;i<100000;i++) {
+        rng^=rng<<13;rng^=rng>>17;rng^=rng<<5;
+        fake.fail=(rng&31u)<8;
+        if(i%1000==0)open_level(&app,1u+(i/1000u)%SOK_LEVEL_COUNT);
+        if((rng&255u)==0)(void)sok_app_power_off(&app);
+        else {
+            SokKey key=(SokKey)((rng>>8)%(SK_COUNT+1u));
+            SokEventType event=(SokEventType)((rng>>16)%3u);
+            (void)sok_app_event(&app,key,event);
+        }
+        CHECK(app.group<4 && app.selection<15 && app.screen<=SOK_PLAY);
+        CHECK(app.modal<=SM_LOAD_NOTICE && app.return_modal<=SM_LOAD_NOTICE);
+        if(app.screen==SOK_PLAY)CHECK(app.level>=1 && app.level<=SOK_LEVEL_COUNT
+            && sok_validate(sok_get_map(app.level),&app.game));
+        if(i%100==0)for(unsigned id=1;id<=SOK_LEVEL_COUNT;id++)
+            if(app.progress.in_progress[id-1])
+                CHECK(sok_validate(sok_get_map(id),&app.progress.levels[id-1]));
+    }
+}
 
 static void test_hold_and_input_barriers(void)
 {
@@ -471,6 +517,8 @@ int main(void)
     test_save_failure_paths();
     test_menu_lifecycle_and_load_notice();
     test_hold_and_input_barriers();
+    test_off_failure_resume_and_menu();
+    test_mixed_event_stress();
     printf("workflow: %u assertions passed (navigation, progress, lifecycle, input)\n",
         assertions);
     return EXIT_SUCCESS;

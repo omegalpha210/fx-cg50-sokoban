@@ -21,6 +21,7 @@ def verify(path):
         'type': header[8] == 0x2c,
         'internal identity': raw[0x60:0x6b].split(b'\0')[0] == b'@SOKOBAN',
         'SOKOBAN identity': raw[0x40:0x50].split(b'\0')[0] == b'SOKOBAN',
+        'release version': raw[0x130:0x13a] == b'00.01.0003',
         'signature': header[9:14] == bytes([0, 1, 0, 1, 0]),
         'size1': be32(header, 0x10) == len(raw),
         'size2': be32(raw, 0x2e) == len(raw) - 0x7004,

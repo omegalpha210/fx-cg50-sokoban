@@ -8,6 +8,8 @@
 #define LINE C_RGB(24,26,26)
 #define PAPER C_RGB(29,30,30)
 #define ORANGE C_RGB(31,18,3)
+#define PLAYER C_RGB(0,17,31)
+#define PLAYER_EDGE C_RGB(0,5,15)
 static const int pale[4]={C_RGB(25,30,25),C_RGB(25,29,31),C_RGB(31,29,22),C_RGB(31,26,25)};
 static const int group_color[4]={C_RGB(3,16,8),C_RGB(3,12,23),C_RGB(16,11,0),C_RGB(23,5,5)};
 static const int walls[4]={C_RGB(7,21,11),C_RGB(6,16,28),C_RGB(26,20,4),C_RGB(27,8,7)};
@@ -48,16 +50,26 @@ static void title(const char *s,const char *right)
     rect(0,0,396,24,INK);text(8,6,s,C_WHITE,1);
     if(right)text(388-sok_text_width(right,1),6,right,C_RGB(25,28,28),1);
 }
-static void softkeys(bool play)
+static void softkeys(const SokApp *app)
 {
+    bool play=app->screen==SOK_PLAY;
     const char *labels[6]={"","","","","","OPEN"};
     if(play){labels[0]="INIT";labels[1]="UNDO";labels[4]="LEVEL-";labels[5]="LEVEL+";}
+    if(app->modal!=SM_NONE) {
+        for(int i=0;i<6;i++)labels[i]="";
+        if(app->modal==SM_SAVE_ERROR)labels[5]="SKIP";
+    }
     rect(0,SOK_SOFTKEY_TOP,396,20,C_WHITE);
     for(int i=0;i<6;i++) {
         if(!labels[i][0])continue;
-        int bg=i==0 && play ? 0xffe0:i==1 && play ? 0xf81f:INK;
+        bool disabled=play && app->modal==SM_NONE && ((i==1 && !app->game.undo_count)
+            || (i==4 && app->level==1) || (i==5 && app->level==SOK_LEVEL_COUNT));
+        int bg=disabled ? LINE:INK;
+        if(!disabled && play && app->modal==SM_NONE && i==0)bg=C_RGB(31,25,12);
+        if(!disabled && play && app->modal==SM_NONE && i==1)bg=C_RGB(21,26,31);
         rect(i*66+1,205,64,18,bg);
-        centered(i*66+1,209,64,labels[i],play && i<2 ? C_BLACK:C_WHITE,1);
+        int fg=disabled ? MUTED:play && i<2 ? INK:C_WHITE;
+        centered(i*66+1,209,64,labels[i],fg,1);
     }
 }
 static void main_screen(const SokApp *app)
@@ -70,7 +82,7 @@ static void main_screen(const SokApp *app)
         text_ratio(x+(187-sok_text_width(names[i],1)*3/2)/2,y+28,names[i],INK,3,2);
     }
     text(9,190,"ARROWS: SELECT     MENU: CASIO MAIN MENU",MUTED,1);
-    softkeys(false);
+    softkeys(app);
 }
 static void level_screen(const SokApp *app)
 {
@@ -86,7 +98,20 @@ static void level_screen(const SokApp *app)
         char number[4];snprintf(number,sizeof(number),"%u",id+1);
         centered(x,y+12,68,number,clear ? C_WHITE:group_color[app->group],2);
     }
-    text(9,193,"EXE: OPEN    EXIT: GROUPS",MUTED,1);softkeys(false);
+    text(9,193,"EXE: OPEN    EXIT: GROUPS",MUTED,1);softkeys(app);
+}
+void sok_draw_player(int x,int y,int size)
+{
+    /* One silhouette at every tile size: blue diamond, dark edge, white glint.
+       At 9 px the marker is 7 px wide; a goal is only a 2 px dark square. */
+    int radius=(size-3)/2,cx=x+size/2,cy=y+size/2;
+    for(int dy=-radius;dy<=radius;dy++) {
+        int extent=radius-(dy<0 ? -dy:dy);
+        rect(cx-extent,cy+dy,extent*2+1,1,PLAYER_EDGE);
+        if(extent>0)rect(cx-extent+1,cy+dy,extent*2-1,1,PLAYER);
+    }
+    int glint=size>=14 ? 2:1;
+    rect(cx-glint+1,cy-glint,glint,glint,C_WHITE);
 }
 SokBoardLayout sok_board_layout(const SokMap *map)
 {
@@ -120,9 +145,7 @@ static void cell(const SokApp *app,const SokMap *map,unsigned p,int x,int y,int 
         }
     }
     if(app->game.player==p) {
-        int head=s>=12 ? 3:2,body=s>=12 ? 5:3;
-        rect(x+(s-head)/2,y+1,head,head,C_BLACK);
-        rect(x+(s-body)/2,y+head+2,body,s-head-3,C_BLACK);
+        sok_draw_player(x,y,s);
     }
 }
 static void stat(int y,const char *label,const char *value)
@@ -141,11 +164,12 @@ static void play_screen(const SokApp *app)
     snprintf(label,sizeof(label),"%lu",(unsigned long)app->game.moves);stat(89,"MOVES :",label);
     snprintf(label,sizeof(label),"%lu",(unsigned long)app->game.pushes);stat(122,"PUSHES :",label);
     snprintf(label,sizeof(label),"UNDO %u/5",app->game.undo_count);text(9,161,label,MUTED,1);
+    sok_draw_player(8,183,13);text(26,185,"YOU",MUTED,1);
     rect(120,SOK_PLAY_TOP,1,SOK_PLAY_HEIGHT,LINE);
     SokBoardLayout l=sok_board_layout(map);
     for(unsigned p=0;p<(unsigned)map->width*map->height;p++)
         cell(app,map,p,l.x+(int)(p%map->width)*l.tile,l.y+(int)(p/map->width)*l.tile,l.tile);
-    softkeys(true);
+    softkeys(app);
 }
 static void modal(const SokApp *app)
 {
@@ -157,7 +181,7 @@ static void modal(const SokApp *app)
     rect(x+2,y+2,w-4,5,app->modal==SM_SAVE_ERROR ? C_RGB(27,5,5):C_RGB(8,19,14));
     const char *heading="",*a="",*b="",*c=NULL;
     switch(app->modal) {
-    case SM_INIT:heading="YOU SURE?";a="EXE: YES";b="EXIT: NO";break;
+    case SM_INIT:heading="RESTART LEVEL?";a="EXE: RESTART";b="EXIT: CANCEL";break;
     case SM_WIN:heading="Congratulations!";
         a=app->level==60 ? "EXE: LEVEL MENU":"EXE: NEXT LEVEL";b="EXIT: LEVEL MENU";break;
     case SM_SAVE_ERROR:heading="SAVE FAILED";a="EXE: RETRY";b="F6: WITHOUT SAVING";c="EXIT: STAY";break;

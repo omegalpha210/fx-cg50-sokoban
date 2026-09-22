@@ -33,13 +33,16 @@ static void checkpoint(SokApp *app,SokAction action)
     if(save_now(app))perform(app);
     else {app->modal=SM_SAVE_ERROR;transition(app);}
 }
-static bool power_off(SokApp *app)
+bool sok_app_power_off(SokApp *app)
 {
     /* Main-thread boundary: the synchronous two-slot transaction returns
        (including all closes/readback) before entering the OS power routine.
        A failed write must not trap the power key in the save-error modal. */
     app->power_save_failed=app->progress.dirty && !save_now(app);
     if(app->hooks.power_off)app->hooks.power_off(app->hooks.context);
+    if(app->power_save_failed && app->modal!=SM_SAVE_ERROR) {
+        app->pending=SA_STAY;app->return_modal=app->modal;app->modal=SM_SAVE_ERROR;
+    }
     /* gint resumes here after ON. Preserve RAM/screen and require fresh keys. */
     transition(app);return true;
 }
@@ -66,6 +69,12 @@ static bool selector(unsigned *index,unsigned cols,unsigned rows,SokKey key)
 bool sok_app_key(SokApp *app,SokKey key)
 {
     if(app->modal==SM_SAVE_ERROR) {
+        if(key==SK_MENU) {
+            if(app->pending==SA_WIN)app->return_modal=SM_WIN;
+            app->pending=SA_OS_MENU;
+            if(save_now(app))perform(app);else transition(app);
+            return true;
+        }
         if(key==SK_EXE) {
             if(save_now(app))perform(app);
             else transition(app);
@@ -133,6 +142,6 @@ bool sok_app_key(SokApp *app,SokKey key)
 bool sok_app_event(SokApp *app,SokKey key,SokEventType type)
 {
     if(!sok_input_event(&app->input,key,type))return false;
-    if(app->input.poweroff)return power_off(app);
+    if(app->input.poweroff)return sok_app_power_off(app);
     return sok_app_key(app,key);
 }

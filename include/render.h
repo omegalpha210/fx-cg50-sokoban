@@ -9,5 +9,6 @@ enum {
 typedef struct {int x,y,tile,width,height;} SokBoardLayout;
 SokBoardLayout sok_board_layout(const SokMap *map);
 int sok_text_width(const char *text,int scale);
+void sok_draw_player(int x,int y,int size);
 void sok_render(const SokApp *app);
 #endif

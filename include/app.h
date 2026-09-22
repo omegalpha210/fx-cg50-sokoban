@@ -25,6 +25,8 @@ typedef struct {
 void sok_app_init(SokApp *app,SokHooks hooks);
 void sok_app_load_notice(SokApp *app,bool recovered);
 bool sok_app_event(SokApp *app,SokKey key,SokEventType type);
+/* Shared manual/automatic OFF path, only from the main thread. */
+bool sok_app_power_off(SokApp *app);
 /* Direct key dispatch is also used for bounded workflow tests. */
 bool sok_app_key(SokApp *app,SokKey key);
 #endif

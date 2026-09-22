@@ -16,7 +16,7 @@ ROOT=Path(__file__).resolve().parents[1]
 TOP=('AGENTS.md','README.md','README_KO.md','LICENSE','THIRD_PARTY_NOTICES.md','CMakeLists.txt','.gitattributes')
 DOCS=('USER_GUIDE.md','DEVELOPMENT.md','ASSET_PROVENANCE.md','PUBLICATION_AUDIT.md',
       'ACCEPTANCE.md','HARDWARE_RETEST.md','MAPS_AUDIT.md','MEMORY.md','STORAGE.md',
-      'POWER.md','LAYOUT_AUDIT.md','ICON_AUDIT.md','ICON_AUDIT.json')
+      'POWER.md','STABILITY_KO.md','LAYOUT_AUDIT.md','ICON_AUDIT.md','ICON_AUDIT.json')
 PUBLIC_IGNORE='''# Generated/local material is not licensed for bundled public redistribution.
 .local/
 build-cg/

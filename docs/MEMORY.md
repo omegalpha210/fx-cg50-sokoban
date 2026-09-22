@@ -8,16 +8,16 @@ path is embedded in the script. Detailed measurements are in
 `build-cg/memory-report.json`.
 
 ELF: `build-cg/sokoban`. SHA-256:
-`0fb7ffc1f8856d5f7844346921eeedd2a328950c3e16aa5a33ed865134b9d205`.
+`b7e0af50b8f57517add1519c891bff935fccb88721c55e6180730e1f7f65c0a8`.
 
 ## Linked sections
 
 | `sh-elf-size` category | Bytes |
 | --- | ---: |
-| text (code and read-only sections) | 46,512 |
-| initialized data | 464 |
-| BSS | 12,400 |
-| total reported sections | 59,376 |
+| text (code and read-only sections) | 48,156 |
+| initialized data | 512 |
+| BSS | 12,432 |
+| total reported sections | 61,100 |
 
 These linked totals include pulled-in gint, C-library and compiler runtime code
 and globals. They are not the `.g3a` package size, a total RAM requirement, or a
@@ -75,12 +75,12 @@ The build enables `-fstack-usage` and `-Wframe-larger-than=2048`.
 | --- | ---: | --- | --- |
 | `sok_storage_save_io` | 212 | `static` | `src/storage/transaction.c:133` |
 | `records` | 152 | `static` | `src/storage/codec.c:92` |
-| `sok_render` | 140 | `static` | `src/ui/render.c:172` |
 | `sok_validate` | 132 | `static` | `src/game/game.c:186` |
+| `sok_render` | 128 | `static` | `src/ui/render.c:196` |
 | `sok_init` | 104 | `static` | `src/game/game.c:134` |
-| `text_ratio` | 76 | `static` | `src/ui/render.c:27` |
+| `softkeys` | 76 | `static` | `src/ui/render.c:53` |
+| `text_ratio` | 76 | `static` | `src/ui/render.c:29` |
 | `sok_storage_load_io` | 72 | `static` | `src/storage/transaction.c:65` |
-| `main` | 64 | `static` | `src/main.c:31` |
 
 This is not total stack peak. Nested caller/callee frames, gint/libc frames,
 interrupt handling, OS world-switch state, and OS stack reservations are not

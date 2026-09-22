@@ -15,9 +15,9 @@ endif()
 include_directories(../include)
 add_library(core ../src/game/game.c ../src/maps/generated_maps.c
   ../src/storage/progress.c ../src/storage/codec.c ../src/storage/transaction.c
-  ../src/app.c ../src/ui/input.c)
+  ../src/app.c ../src/ui/input.c ../src/idle.c)
 enable_testing()
-foreach(name engine storage workflow)
+foreach(name engine storage workflow idle)
   add_executable(test_${name} test_${name}.c)
   target_link_libraries(test_${name} core)
   add_test(NAME ${name} COMMAND test_${name})
@@ -35,6 +35,9 @@ add_executable(test_power test_power.c)
 target_include_directories(test_power PRIVATE native-input)
 target_link_libraries(test_power core)
 add_test(NAME power COMMAND test_power)
+add_executable(test_system_power test_system_power.c ../src/system_power.c)
+target_include_directories(test_system_power PRIVATE native-storage)
+add_test(NAME system_power COMMAND test_system_power)
 # Public illustrations never link the upstream map pack.
 add_executable(capture_public public/capture.c public/fixture.c host/display.c
   ../src/game/game.c ../src/ui/render.c)

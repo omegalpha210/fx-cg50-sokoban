@@ -8,13 +8,18 @@
 #include <stdio.h>
 #include <string.h>
 
-typedef struct {key_event_t event;void (*check)(void);} Step;
-#define DOWN(key_) {{KEYEV_DOWN,key_},NULL}
-#define UP(key_) {{KEYEV_UP,key_},NULL}
-#define HOLD(key_) {{KEYEV_HOLD,key_},NULL}
-#define CHECK(fn_) {{KEYEV_NONE,0},fn_}
+typedef struct {key_event_t event;void (*check)(void);uint32_t elapsed;} Step;
+#define DOWN(key_) {{KEYEV_DOWN,key_},NULL,0}
+#define UP(key_) {{KEYEV_UP,key_},NULL,0}
+#define HOLD(key_) {{KEYEV_HOLD,key_},NULL,0}
+#define CHECK(fn_) {{KEYEV_NONE,0},fn_,0}
+#define WAIT(seconds_) {{KEYEV_NONE,0},NULL,(seconds_)*SOK_CLOCK_HZ}
 static const Step *script;
 static unsigned script_count,script_index,saves,offs,menus,renders,barriers;
+static unsigned settings_reads,dim_calls,restore_calls,sleeps;
+static uint32_t clock_ticks;
+static SokPowerSettings system_settings;
+static SokLoadResult load_result=SOK_LOAD_NEW;
 static bool held[256],fail_write,transaction_active,check_snapshot;
 static bool opened,writing,exists[2];
 static uint8_t records[2][SOK_SAVE_MAX_SIZE];
@@ -62,7 +67,7 @@ static int mock_close(void *context,int fd)
 }
 static const SokStorageIO io={NULL,mock_open,mock_read,mock_write,mock_close};
 SokLoadResult sok_storage_load(SokProgress *progress)
-{sok_progress_init(progress);return SOK_LOAD_NEW;}
+{sok_progress_init(progress);return load_result;}
 bool sok_storage_save(SokProgress *progress)
 {
     assert(!transaction_active && !opened);++saves;transaction_active=true;
@@ -97,7 +102,28 @@ void gint_poweroff(bool show_logo)
         }
     }
 }
-void gint_osmenu(void){assert(!transaction_active && !opened);++menus;}
+void gint_osmenu(void)
+{
+    assert(!transaction_active && !opened);++menus;
+    /* Simulate changing settings and the clock while in SYSTEM. */
+    system_settings=(SokPowerSettings){60,6,3};clock_ticks=123456;
+}
+uint32_t rtc_ticks(void){return clock_ticks%SOK_DAY_TICKS;}
+void sleep(void){++sleeps;}
+void sok_system_power_settings(SokPowerSettings *settings)
+{*settings=system_settings;++settings_reads;}
+void sok_system_backlight(int level)
+{
+    assert(!transaction_active && !opened);
+    if(level<0 || level>5)return;
+    if(level==0)++dim_calls;else {assert(level==system_settings.brightness);++restore_calls;}
+}
+bool keydev_idle(keydev_t *device,...)
+{
+    assert(device==&keyboard);
+    for(unsigned i=0;i<256;i++)if(held[i])return false;
+    return true;
+}
 void dsetvram(uint16_t *first,uint16_t *second)
 {assert(first==gint_vram && !second);}
 void sok_render(const SokApp *current){assert(current==&app);++renders;}
@@ -114,10 +140,11 @@ void keydev_set_transform(keydev_t *device,keydev_transform_t transform)
 }
 key_event_t keydev_read(keydev_t *device,bool wait,volatile int *timeout)
 {
-    assert(device==&keyboard && wait && !timeout);
+    assert(device==&keyboard && !wait && !timeout);
     while(script_index<script_count) {
         Step next=script[script_index++];
         if(next.check){next.check();continue;}
+        clock_ticks=(clock_ticks+next.elapsed)%SOK_DAY_TICKS;
         if(next.event.type==KEYEV_DOWN)held[next.event.key]=true;
         else if(next.event.type==KEYEV_UP)held[next.event.key]=false;
         return next.event;
@@ -129,6 +156,8 @@ static void run(const Step *steps,unsigned count)
     memset(held,0,sizeof(held));memset(exists,0,sizeof(exists));
     script=steps;script_count=count;script_index=0;
     saves=offs=menus=renders=barriers=0;
+    settings_reads=dim_calls=restore_calls=sleeps=0;clock_ticks=0;
+    system_settings=(SokPowerSettings){10,1,4};
     fail_write=false;transaction_active=false;opened=false;check_snapshot=false;
     expected_screen=SOK_MAIN;expected_modal=SM_NONE;
     if(setjmp(finished)==0)(void)sok_native_main();
@@ -280,11 +309,62 @@ static void check_dirty_screens(void)
         UP(KEY_SHIFT),DOWN(KEY_ACON)};
     RUN(twice);assert(offs==2 && saves==1 && !app.progress.dirty);
 }
+static void assert_dimmed(void){assert(dim_calls==1 && restore_calls==0 && offs==0);}
+static void assert_restored(void){assert(dim_calls==1 && restore_calls==1 && offs==0);}
+static void assert_no_dim(void){assert(dim_calls==0 && offs==0);}
+static void assert_auto_saved(void)
+{
+    assert_once_saved();assert(settings_reads==2);
+    assert(!idle.dimmed && idle.last_activity==rtc_ticks());
+    if(fail_write)assert(app.modal==SM_SAVE_ERROR && app.progress.dirty);
+}
+static void expect_startup_notice(void)
+{
+    expected_modal=SM_LOAD_NOTICE;
+    assert(app.modal==SM_LOAD_NOTICE);
+    assert(app.recovered_notice==(load_result==SOK_LOAD_RECOVERED));
+}
+static void invalid_brightness(void){power_settings.brightness=0;}
+static void check_idle_lifecycle(void)
+{
+    const Step dim[]={WAIT(29),CHECK(assert_no_dim),WAIT(1),CHECK(assert_dimmed),
+        WAIT(100),CHECK(assert_dimmed),DOWN(KEY_0),CHECK(assert_restored),UP(KEY_0),
+        WAIT(29),CHECK(assert_restored),WAIT(1)};
+    RUN(dim);assert(dim_calls==2 && restore_calls==1 && sleeps>0);
+    const Step held_key[]={DOWN(KEY_0),WAIT(3601),CHECK(assert_no_dim),
+        UP(KEY_0),WAIT(29),CHECK(assert_no_dim),WAIT(1),CHECK(assert_dimmed)};
+    RUN(held_key);
+    void (*const fixtures[])(void)={dirty_move,dirty_push,dirty_undo,dirty_init_modal,
+        dirty_win_modal,dirty_save_error,dirty_main,dirty_levels,dirty_load_notice};
+    for(unsigned i=0;i<sizeof(fixtures)/sizeof(fixtures[0]);i++) {
+        const Step steps[]={CHECK(fixtures[i]),WAIT(30),WAIT(569),CHECK(assert_none),
+            WAIT(1),CHECK(assert_auto_saved),WAIT(1)};
+        RUN(steps);assert(offs==1 && saves==1 && dim_calls==1 && restore_calls==1);
+    }
+    const Step failed[]={CHECK(previous_save_then_change),WAIT(600),CHECK(assert_auto_saved)};
+    RUN(failed);assert(app.progress.dirty && app.progress.generation==1);
+    assert(lengths[0]==previous_length && memcmp(records[0],previous_record,previous_length)==0);
+    const Step reload[]={WAIT(30),DOWN(KEY_MENU),UP(KEY_MENU),WAIT(179),WAIT(1),WAIT(3420)};
+    RUN(reload);assert(menus==1 && offs==1 && settings_reads==3 && dim_calls==2 && restore_calls==2);
+    const Step clean[]={WAIT(600),CHECK(assert_once_clean),WAIT(599),CHECK(assert_once_clean),WAIT(1)};
+    RUN(clean);assert(offs==2 && saves==0);
+    const Step invalid[]={CHECK(invalid_brightness),WAIT(30),DOWN(KEY_0),UP(KEY_0),
+        WAIT(600),CHECK(assert_once_clean)};
+    RUN(invalid);assert(!dim_calls && !restore_calls);
+    const SokLoadResult notices[]={SOK_LOAD_INVALID,SOK_LOAD_IO_ERROR,SOK_LOAD_RECOVERED};
+    for(unsigned i=0;i<sizeof(notices)/sizeof(notices[0]);i++) {
+        load_result=notices[i];
+        const Step notice[]={CHECK(expect_startup_notice),WAIT(600),CHECK(assert_once_clean),
+            DOWN(KEY_EXE),UP(KEY_EXE)};
+        RUN(notice);assert(app.modal==SM_NONE);
+    }
+    load_result=SOK_LOAD_NEW;
+}
 int main(void)
 {
     assert(KEY_SHIFT==0x81 && KEY_ACON==0x07 && native_keys[SK_SHIFT]==KEY_SHIFT
         && native_keys[SK_ACON]==KEY_ACON);
-    check_input();check_barriers();check_dirty_screens();
-    puts("power: native key mapping, tap/held chords, barriers, all screens, real save-before-off passed");
+    check_input();check_barriers();check_dirty_screens();check_idle_lifecycle();
+    puts("power: manual/automatic OFF, all screens, idle dim/wake/held keys, SYSTEM reload and save failures passed");
     return 0;
 }

@@ -2,7 +2,7 @@
 
 ## Goal and counters
 
-Move the black warehouse keeper with the arrow keys. Push the orange crates
+Move the blue diamond marked YOU in the HUD with the arrow keys. Push the orange crates
 onto every dark goal dot. Walls and exterior space are impassable. You may
 push one crate into an empty floor/goal square; you cannot pull crates or push
 two together. Orange crates retain their color on a goal and gain a white mark.
@@ -41,13 +41,15 @@ at most. Blocked inputs consume no history. A new move after undo discards that
 future; there is no redo. The remaining history is saved with each level.
 Control keys act on fresh presses, so holding F2 does not consume all five.
 
-F1 INIT opens `YOU SURE?` with `EXE: YES` and `EXIT: NO`. Nothing changes until
+F1 INIT opens `RESTART LEVEL?` with `EXE: RESTART` and `EXIT: CANCEL`. Nothing changes until
 EXE. Confirmation resets this level's layout, counters and undo, then checkpoints
 it. Its earned completion and other levels remain intact.
 
 F5 LEVEL- / F6 LEVEL+ checkpoints and opens the adjacent global level, including
 15→16, 30→31 and 45→46. Level 1 has no predecessor and 60 has no successor;
 these controls do not wrap. A saved attempt on the destination resumes.
+Unavailable LEVEL-/+ and empty UNDO buttons are muted. Dialogs clear unrelated
+softkeys; the save-error dialog labels F6 as SKIP.
 
 ## Completion and resume
 
@@ -79,6 +81,8 @@ A failed save displays `SAVE FAILED`:
 - EXE: retry saving the current RAM state.
 - F6: perform the pending action without claiming a successful save.
 - EXIT: stay in the app. RAM and the dirty state remain for later retry.
+- MENU: request CASIO Main Menu with another save attempt; if it fails, EXE
+  retries or F6 leaves without saving. A completed board retains its win dialog.
 
 When INIT was already confirmed, EXIT from a save error keeps the restarted
 board; it does not roll back INIT. A completion remains earned in RAM even if
@@ -102,9 +106,23 @@ Dirty progress is checkpointed through the existing two-slot transaction, with
 write/close/readback completed before `gint_poweroff(true)`. Clean state causes
 no storage write. If the one attempt fails, dirty RAM and an error flag are
 retained and power-off still proceeds; there is no blocking save dialog. That
-failure must not be mistaken for persistence.
+failure must not be mistaken for persistence. After ON, SAVE FAILED offers
+retry/skip/stay and preserves the prior screen or modal behind it.
 
 ON can resume the same suspended execution in gint, keeping the current screen
 and RAM with a release barrier. A genuinely new application launch starts at
 Main and loads saved per-level progress. Hardware power-off, wake-up and
 fresh-launch persistence still require the checklist. See [POWER.md](POWER.md).
+
+## SYSTEM idle settings
+
+Auto Power Off follows SYSTEM's 10 or 60 minutes. Backlight Duration follows
+30 seconds, 1 minute or 3 minutes. These settings and normal brightness are read
+at launch and after MENU/ON. Dimming requests CG50 idle brightness level 0;
+physical equivalence with the firmware is a required hardware test.
+Any physical key activity restores brightness and resets both deadlines. Held
+and unused keys count; a wake key also performs its normal game action.
+All screens and dialogs share these deadlines. Automatic OFF follows the same
+save/failure rules as manual OFF. No settings are written back to SYSTEM.
+Invalid duration reads fall back to 10 minutes/30 seconds. An unknown normal
+brightness disables brightness changes so no unverified restore level is used.

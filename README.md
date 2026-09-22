@@ -4,10 +4,10 @@
 
 A native C / fxSDK / gint Sokoban add-in: four groups of 15 levels, five-step
 undo, independent per-level automatic progress, and safe MENU / power-off
-checkpoints. **v0.1.0-beta.2 — HARDWARE RETEST REQUIRED.** This update redesigns
-the app icon on a common 10×10 pixel grid, with equal wall/crate footprints and
-a 22-pixel lower margin. The owner reports basic play working on an fx-CG50;
-the icon and remaining navigation/layout/power checks still need physical testing.
+checkpoints. **v0.1.0-beta.3 — HARDWARE RETEST REQUIRED.** This update reads SYSTEM
+Auto Power Off and Backlight Duration, adds a consistent blue diamond player,
+and improves save-failure recovery and control hints. Earlier basic play was
+reported working on an fx-CG50; the new idle power integration needs physical testing.
 
 ![Actual application renderer](docs/public-captures/overview.png)
 
@@ -17,7 +17,7 @@ not one of the referenced upstream puzzles. They are not calculator photographs.
 
 ## Source-only prerelease
 
-The [GitHub prerelease](https://github.com/omegalpha210/fx-cg50-sokoban/releases/tag/v0.1.0-beta.2)
+The [GitHub prerelease](https://github.com/omegalpha210/fx-cg50-sokoban/releases/tag/v0.1.0-beta.3)
 publishes source and original illustration assets. **The upstream 60-map text,
 generated map pack, map screenshots, and bundled `SOKOBAN.g3a` are not distributed.**
 The maps are obtained from the referenced upstream source, but redistribution
@@ -75,20 +75,30 @@ MENU and dirty power-off requests checkpoint progress. Each level retains its
 own state and five undo records. Two slots preserve the last valid save through
 failed writes. Forced power loss does not promise every uncheckpointed step.
 A failed normal save offers retry/stay/continue without saving; OFF attempts once
-and records failure in RAM before proceeding. See the [user guide](docs/USER_GUIDE.md).
+and shows a retry dialog after ON if the save failed. See the [user guide](docs/USER_GUIDE.md).
+
+SYSTEM idle settings are read on launch and after MENU/ON: Auto Power Off at
+10/60 minutes and backlight dimming at 30 seconds/1 minute/3 minutes. Any key,
+including an unused or held key, resets inactivity. The normal brightness is
+restored on activity; the OS preferences are not modified. Automatic OFF uses
+the same checkpoint as SHIFT+AC/ON. [Power details and firmware limits](docs/POWER.md).
 
 ## Validation and remaining checks
 
-The engine, UI, controls, save-format version1 and map topology are unchanged
-from beta.1 by this icon-only update. Both opaque 92×64 icon variants use the
-same original artwork; the selected variant changes its surrounding background.
-See the [icon geometry and previews](docs/ICON_AUDIT.md).
+The player is a blue diamond with a dark edge at all 9–19px tile sizes; the HUD
+shows its YOU legend. Empty UNDO and unavailable adjacent levels appear disabled.
+Dialogs hide unrelated softkeys, and restart confirmation names the action.
+The engine, save-format version1, maps and beta.2 launcher icon are preserved.
+
+![Player at every runtime tile size, enlarged 3x](docs/public-captures/player-sizes-3x.png)
+
 Host tests and UBSan, strict SH compile/link, package checks, whole-pack integrity,
-mock native storage/power ordering, and shared-renderer audits are run locally.
+mock native storage/power ordering, 100,000 mixed input events, and failures at
+105 native storage call boundaries are checked locally.
 The gameplay header's 24 pixels now expand the board viewport: 48 levels improve,
 12 stay the same, and the minimum tile rises from8 to9 pixels.
 
-Actual LCD legibility, OS-label spacing, physical SHIFT/AC behavior, real power
+Actual LCD brightness/legibility, physical SHIFT/AC behavior, real power
 cycling and persistence must be retested. [Acceptance](docs/ACCEPTANCE.md) records
 precise results and limits; [HARDWARE_RETEST.md](docs/HARDWARE_RETEST.md) is the
-checklist. [한국어 설명](README_KO.md).
+checklist. [오류·안정성 상세 검증](docs/STABILITY_KO.md). [한국어 설명](README_KO.md).

@@ -1,122 +1,78 @@
-# Acceptance — v0.1.0-beta.2
+# Acceptance — v0.1.0-beta.3
 
-This milestone redesigns only the CASIO Main Menu icon and updates its generator,
-geometry tests, previews, documentation and package/release version. The engine,
-60 maps, movement/UNDO, saves, SHIFT+AC/ON, menus, gameplay renderer and MENU/EXIT
-lifecycle are unchanged from beta.1. Both native icon records use the new artwork.
+Beta.3 adds SYSTEM idle settings, a blue diamond player and clearer modal/control
+hints. Manual and automatic OFF share a checkpoint; failed OFF saves now show
+SAVE FAILED after ON. MENU also works from save errors, retaining completion
+state. Rules, 60 pinned maps, save version 1, app/save identity and beta.2 launcher
+icons are preserved. Hardware brightness and suspend/resume remain unverified.
 
-The eligible prerelease remains **source-only**. Original code/icons are MIT;
-separately identified dependencies retain their notices. Upstream-map redistribution
-is still unconfirmed. No raw/generated map pack, bundled `.g3a`, its release
-checksum, or upstream-map screenshot is published. See [publication audit](PUBLICATION_AUDIT.md).
-
-## Baseline and unchanged runtime
-
-The clean local baseline was `main` at `bf88d8bf796e59aed21cc5569b576c1acc6da7a6`;
-the verified public main/tag beta.1 was `b817f1057d8c591aed739dcb8d64031da8d08b32`.
-No newer public version or conflicting beta.2 tag existed at the initial check.
-Existing public history is retained, with a normal descendant update and new tag.
-Local development history remains private because it includes retained map data.
-
-`src/`, `include/` and map assets have no diff from the local baseline. The clean
-native `sokoban.bin` remains byte-identical: 46,976 bytes, SHA-256
-`7e92e0d3c4927141ece4172a5e91ce2030451c8ef9b109f0f86358498fbcbfed`.
-Only G3A icon/version metadata and corresponding checksums change in the package.
-App name `SOKOBAN`, internal ID `@SOKOBAN`, save names and format version 1 remain.
-DIFF EQ was inspected read-only; its source/output/history remain independent.
-The existing toolchain was reused without reinstalling or upgrading it.
-
-## Icon acceptance
-
-The supplied 92×64 image visually matches the old asset. Old wall blocks were
-11×11px, while the crate was 17×17px. Its lower edge y46 left 17 clear rows, and
-hardware feedback still found it close to the OS label. The new original scene
-uses an 8×4 grid of 10×10 cells at `(6,2)`, with player → crate → target in adjacent
-cells. It is redrawn geometry, not a translation or downscaled previous bitmap.
-
-| Measure | beta.1 | beta.2 |
-|---|---:|---:|
-| Canvas, both opaque RGB variants | 92×64 | 92×64 |
-| Wall outer footprint | 11×11 | 10×10 |
-| Crate outer footprint | 17×17 | 10×10 |
-| Crate orange inner fill | 13×13 | 8×8 |
-| Inclusive artwork bounds | (8,1)..(83,46) | (6,2)..(85,41) |
-| Top margin | 1px | 2px |
-| Bottom margin | 17px | 22px |
-| Normal PNG bytes | 658 | 478 |
-| Selected PNG bytes | 652 | 480 |
-| Native RGB565 bytes per variant | 11,776 | 11,776 |
-
-Wall/crate footprints are measured as fully occupied equal-size cells. The black
-player and small hollow goal fit within one cell each. Flat colors and integer
-coordinates avoid antialiasing. No text, external sprite, commercial Sokoban art
-or CASIO icon artwork is used. Both variants have identical 80×40 artwork;
-selected changes only the surrounding background. There is no enclosing thick
-rounded frame. Bottom rows 42..63 are plain background.
-
-The direct PNG → fxgxa RGB565 pipeline is preserved; icons are packaged metadata,
-not runtime graphics or a new icon cache. The separate CASIO name fields still
-supply `SOKOBAN`. [ICON_AUDIT.md](ICON_AUDIT.md) records sources, precise grid,
-DIFF EQ numeric reference, hashes, normal/selected comparison, 8× nearest-neighbor
-previews and a clearly illustrative label-safe-area mock. The optional actual
-DIFF EQ side-by-side is local-only, outside the public snapshot.
+The public baseline is `ccaaa5ea5ec8af9571fb76ca3a62ec5c40523881` (beta.2).
+Publication preserves this ancestry and existing tags. Development history,
+upstream maps/captures and bundled binary remain local. The release is source
+only because map redistribution permission remains unresolved.
 
 ## Automated evidence
 
-Native and host build directories were empty for the clean regression run.
-
 | Check | Result |
 |---|---|
-| Python | **39 passed**: original 24, icon 8, layout 3, publication safety 4. |
-| Icon geometry | Deterministic regeneration; 92×64 RGB; flat palette; safe bounds; every cell on the same 10px grid; equal actual wall/crate footprints; player/goal placement; selected visibility; no text drawing. |
-| C/UBSan | **7/7 suites passed**: engine, storage, workflow, renderer, native BFile, power and public renderer. |
-| Engine | 359,247 assertions; 76,275 legal randomized moves/undo and 1,500 pushes across 60 maps. |
-| Workflow | 895 assertions, retaining Main/all-group row-major navigation and lifecycle behavior. |
-| Native storage/power | 297 BFile calls within 9 complete mocked OS transactions; save-before-OFF, failure, chords and one-shot behavior passed. |
-| SH | Clean strict compile/link; **0 compiler warnings**. |
-| Package | **15 checks passed**; normal and selected RGB565 records match the new PNGs byte-for-byte. |
-| Maps/save | Unchanged pinned pack, all 60 state/history round-trips and prior corruption/fallback coverage. |
-| Renderer | 87 local full-pack captures and both contact sheets regenerated identically; 5 public original-fixture views remain unchanged. |
-| ASan | Not verified: this host runtime stalls before main, including an empty program. UBSan passes. |
+| Python | 40 tests passed: importer/package/icon/layout/publication, including rejection of a correctly checksummed package with stale release version. |
+| C/UBSan | 9/9 suites: engine, storage, workflow, idle, renderer, native storage, native entry/power, native power adapter, public renderer. |
+| Engine | 359,247 assertions, 76,275 successful randomized moves and 1,500 pushes/UNDO across all 60 maps. |
+| Workflow | 333,106 assertions, including 100,000 mixed events with save failures, screen changes and OFF. |
+| Native storage | Errors injected at 48 save + 57 load OS-call boundaries; backup, RAM, generation, close and retry verified. 9,026 BFile calls in 215 OS transactions. |
+| Idle | All ticks through six duration combinations at three start times, including midnight; 18 complete sweeps. |
+| Native entry | Manual/automatic OFF in all screens/modals, held/unused keys, dim/restore, changed settings/clock after MENU, startup notices, unknown brightness, clean writes avoided, finite save failure. |
+| OS power adapter | Three setting reads and transient brightness calls occur inside the OS world; out-of-range brightness rejected. Four SH syscall wrappers inspected in disassembly. |
+| SH build | Strict compile/link, zero compiler warnings. |
+| Package | 16 G3A checks; version 00.01.0003; both icon records match retained PNGs. |
+| Renderer | 87 full-pack captures, no out-of-bounds drawing; six public own-fixture UI captures and every player size 9..19px checked. |
+| ASan | Not verified; existing host runtime stalls before main. UBSan passes. |
 
-The same full checks also passed in the exact public candidate, hydrated locally
-with pinned inputs and rebuilt from empty native/host build directories. Icon
-regeneration is byte-identical; its native payload and full package match the
-development build. Generated maps and build outputs stay ignored. Public source
-ZIP contents are verified against the tag after publication; binary upload/download
-verification is not applicable while map-bundled binary distribution is withheld.
+The public candidate is rebuilt from fresh build directories after hydrating
+ignored pinned map inputs. The native payload/package must match the development
+build byte-for-byte before publishing. Source ZIP contents are checked against
+the tag; no map-bundled binary is uploaded. Local publication evidence is stored
+outside the public snapshot.
 
-## Native size and local package
+## Native size and package
 
-| Measurement, bytes | beta.1 | beta.2 |
+| Measurement, bytes | beta.2 | beta.3 |
 |---|---:|---:|
-| ELF text | 46,512 | 46,512 |
-| data | 464 | 464 |
-| BSS | 12,400 | 12,400 |
-| Largest project single stack frame | 212 | 212 |
-| Active state | 92 | 92 |
-| Entire app | 5,812 | 5,812 |
-| Entire progress | 5,648 | 5,648 |
+| ELF text | 46,512 | 48,156 |
+| data | 464 | 512 |
+| BSS | 12,400 | 12,432 |
+| Largest own single stack frame | 212 | 212 |
+| SokApp | 5,812 | 5,812 |
+| SokProgress | 5,648 | 5,648 |
 | Save workspace | 5,520 | 5,520 |
-| Maximum save per slot | 3,336 | 3,336 |
-| Local `.g3a` | 75,652 | 75,652 |
+| Maximum encoded save per slot | 3,336 | 3,336 |
+| Local G3A | 75,652 | 77,344 |
 
-No new runtime memory, framebuffer, board copy or icon cache is introduced.
-Single-frame size is not total stack usage or free heap. See [MEMORY.md](MEMORY.md).
+No extra timer, framebuffer or per-move allocation is introduced. Idle policy
+and cached settings add 32 bytes of application BSS. Single-frame size does not
+measure the total stack peak or available RAM. See [MEMORY.md](MEMORY.md).
 
-The final local `dist/SOKOBAN.g3a` is 75,652 bytes, SHA-256
-`1b894f0ffe6c18ea40df0cda0c084dcd44c1f72818a6065e42d2f3756277f731`.
-`dist/SHA256SUMS.txt` agrees. `SOURCE_DATE_EPOCH=1789660800` fixes header time for
-candidate/development comparison. Numeric CASIO version is `00.01.0002`.
-This hash identifies local validation output, not a public binary release asset.
+Local `dist/SOKOBAN.g3a` SHA-256:
+`ce79a397f1992e9e541a36a2bd1dbc8ab2055f7a5e1d9fdfe07c65213ba4386b`.
+Native payload SHA-256:
+`dabc1583b52690d9431693bbdc02c77b23520e1e7d816fa34031ffdc37f54bd0`.
+`SOURCE_DATE_EPOCH=1789660800` fixes package header time for candidate comparison.
+These identify local validation output, not downloadable release binaries.
 
-## Remaining physical checks
+## Findings and physical limits
 
-The owner reported prior basic gameplay working. No new physical icon acceptance
-is claimed. **HARDWARE TEST REQUIRED:** 11 priority icon checks cover equal apparent
-wall/crate size, player/goal recognition, push-puzzle identity, actual OS-label
-gap, no top clipping, both selection states, relative size among Main Menu apps,
-and separation comparable to DIFF EQ. Remaining beta.1 physical navigation,
-LCD, OFF/ON, persistence and memory checks are retained in
-[HARDWARE_RETEST.md](HARDWARE_RETEST.md). Host mock label placement is illustrative,
-not an OS screenshot or proof of a sufficient real label gap.
+Two visible failure paths are improved: failed OFF checkpoints are surfaced on
+resume, and a save-error modal no longer ignores MENU. Retargeting a failed
+completion to MENU preserves Congratulations after return. No host crash or
+UBSan failure was reproduced in the checks above. This does not establish that
+firmware calls cannot hang or that the calculator is crash-free.
+
+The CG50 dim request uses level 0 based on CG50-specific investigation; its
+behavior through the transient syscall, actual normal-brightness restoration,
+all SYSTEM time choices, physical scanner timing, storage failures and real
+OFF/ON or cold relaunch are **HARDWARE TEST REQUIRED**. Sources and inference
+limits are explicit in [POWER.md](POWER.md). The inherited gint emergency abort
+chord is documented in [the detailed Korean stability/error audit](STABILITY_KO.md).
+
+The full physical checklist is [HARDWARE_RETEST.md](HARDWARE_RETEST.md). No physical
+beta.3 pass is inferred from host mocks or renderer images.

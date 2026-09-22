@@ -96,3 +96,12 @@ With map rights unresolved, the eligible prerelease is source-only. A bundled
 report a withheld upload as successful release-asset verification. Hardware
 power-off, LCD layout/icon placement and resumed saves still require calculator
 retesting independently of source publication.
+
+## beta.3 update
+
+The owner requested SYSTEM idle integration, stability/error verification, UI
+clarity and a GitHub update. The beta.3 candidate descends from existing public
+main `ccaaa5ea5ec8af9571fb76ca3a62ec5c40523881`; beta.1 and beta.2 tags remain
+unchanged. New source, tests, docs and own-fixture illustrations are allowlisted.
+The same map/binary/private-material exclusions apply. A new beta.3 prerelease
+contains source only; no release binary is authorized by unresolved map rights.

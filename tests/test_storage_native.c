@@ -11,13 +11,15 @@ static bool exists[2], opened, writing, os_world;
 static unsigned switches, calls, failed_closes;
 static bool fail_write, fail_readback, fail_create, wrote;
 static unsigned fail_close_write;
+static unsigned injected_call;
 static SokProgress progress, loaded, before;
 static uint8_t backup[SOK_SAVE_MAX_SIZE];
 
-static void native_call(void)
+static bool native_call(void)
 {
     assert(os_world);
     ++calls;
+    return calls==injected_call;
 }
 
 static int path_slot(const uint16_t *path)
@@ -44,7 +46,7 @@ int gint_world_switch(gint_call_t call)
 
 int BFile_Remove(const uint16_t *path)
 {
-    native_call();
+    if(native_call())return -5;
     assert(!opened);
     int id = path_slot(path);
     bool had_file = exists[id];
@@ -55,7 +57,7 @@ int BFile_Remove(const uint16_t *path)
 
 int BFile_Create(const uint16_t *path, int type, int *size)
 {
-    native_call();
+    if(native_call())return -5;
     assert(!opened && type == BFile_File && *size == 0);
     int id = path_slot(path);
     if(fail_create) return -5;
@@ -66,7 +68,7 @@ int BFile_Create(const uint16_t *path, int type, int *size)
 
 int BFile_Open(const uint16_t *path, int mode)
 {
-    native_call();
+    if(native_call())return -5;
     assert(!opened && (mode == BFile_ReadOnly || mode == BFile_WriteOnly));
     slot = path_slot(path);
     if(!exists[slot]) return BFile_EntryNotFound;
@@ -78,7 +80,7 @@ int BFile_Open(const uint16_t *path, int mode)
 
 int BFile_Close(int fd)
 {
-    native_call();
+    if(native_call())return -5;
     assert(fd == 0 && opened);
     if(writing && fail_close_write) {
         --fail_close_write;
@@ -91,14 +93,14 @@ int BFile_Close(int fd)
 
 int BFile_Size(int fd)
 {
-    native_call();
+    if(native_call())return -5;
     assert(fd == 0 && opened);
     return sizes[slot];
 }
 
 int BFile_Write(int fd, const void *data, int size)
 {
-    native_call();
+    if(native_call())return -5;
     assert(fd == 0 && opened && writing && size > 0);
     wrote = true;
     if(fail_write && position != 0) return -5;
@@ -113,7 +115,7 @@ int BFile_Write(int fd, const void *data, int size)
 
 int BFile_Read(int fd, void *data, int size, int offset)
 {
-    native_call();
+    if(native_call())return -5;
     assert(fd == 0 && opened && !writing && offset >= 0 && size > 0);
     /* Real Fugue allows reads beyond EOF; adapter must prevent them. */
     assert(offset + size <= sizes[slot]);
@@ -142,6 +144,35 @@ static void good_save(void)
     assert(sok_storage_save(&progress));
     assert(switches == previous + 1 && !os_world && !opened);
     assert(!progress.dirty);
+}
+static void fault_sweep(void)
+{
+    fresh();good_save();progress.dirty=true;
+    unsigned start=calls;good_save();unsigned save_calls=calls-start;
+    for(unsigned point=1;point<=save_calls;point++) {
+        fresh();good_save();progress.dirty=true;before=progress;
+        int length=sizes[0];memcpy(backup,files[0],(size_t)length);
+        injected_call=calls+point;wrote=false;
+        bool ok=sok_storage_save(&progress);injected_call=0;
+        assert(!os_world && !opened);
+        assert(sizes[0]==length && memcmp(files[0],backup,(size_t)length)==0);
+        if(ok)assert(!progress.dirty && progress.generation==2);
+        else assert(memcmp(&progress,&before,sizeof(progress))==0);
+        /* Retry must work after every one-shot OS failure. */
+        good_save();
+    }
+    fresh();good_save();progress.dirty=true;good_save();wrote=false;
+    start=calls;assert(sok_storage_load(&loaded)==SOK_LOAD_OK);
+    unsigned load_calls=calls-start;
+    for(unsigned point=1;point<=load_calls;point++) {
+        injected_call=calls+point;
+        SokLoadResult result=sok_storage_load(&loaded);injected_call=0;
+        assert(!opened && !os_world);
+        assert(result==SOK_LOAD_OK || result==SOK_LOAD_RECOVERED);
+        assert(loaded.generation>=1 && loaded.generation<=2 && !loaded.dirty);
+    }
+    printf("native fault sweep: %u save + %u load OS-call boundaries, backup/RAM/cleanup verified\n",
+        save_calls,load_calls);
 }
 
 int main(void)
@@ -187,6 +218,7 @@ int main(void)
     assert(sok_storage_load(&loaded) == SOK_LOAD_OK);
     assert(switches == previous + 1 && !os_world && !opened);
     assert(loaded.generation == 3 && loaded.in_progress[0]);
+    fault_sweep();
     printf("native storage contract passed: %u BFile calls inside %u complete OS transactions\n",
         calls, switches);
     return 0;
