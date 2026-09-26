@@ -50,7 +50,7 @@ class PackageTests(unittest.TestCase):
 
     def test_stale_version_even_with_valid_checksum(self):
         data = bytearray(self.raw)
-        data[0x130:0x13a] = b'00.01.0002'
+        data[0x130:0x13a] = b'00.01.0003'
         crc = ((sum(data[:32]) + sum(data[0x24:-4])) & 0xffffffff).to_bytes(4, 'big')
         data[0x20:0x24] = data[-4:] = crc
         with self.assertRaisesRegex(ValueError, 'release version'):

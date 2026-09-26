@@ -1,0 +1,32 @@
+{
+  "capture": "actual shared C renderer and unchanged pinned maps on host; not hardware photos",
+  "levels": {
+    "basic": 1,
+    "intermediate": 16,
+    "advanced": 31,
+    "master": 59
+  },
+  "completion": {
+    "level": 1,
+    "legal_moves": 394,
+    "pushes": 134,
+    "replay": "tests/showcase.c",
+    "from_original_start": true,
+    "optimality_claimed": false
+  },
+  "map_rights": "Separate upstream rights; screenshots are not a map license or a redistribution grant.",
+  "files": {
+    "main.png": "23325e96d4c1d5bd66c6690ed3ae2e3f0531d00df6683c629350a3f8a4074192",
+    "levels-basic.png": "add44facc0bbbde374ca229f2f022a30c5601a53d3ef53437a65b53d1de8f737",
+    "levels-intermediate.png": "2feedc627d7d72cf4b2f11fd2c22f6ca87323a50f5d5dac403de2393cbc6c8ef",
+    "levels-advanced.png": "1051b9369798bba611640cce45c537cbec390cf8f346923b4fc05d515b5d35f5",
+    "levels-master.png": "3fa8e8feb964f3630c310d75e5ab7cb469be3ae5b29bd71144b3e7e29292b446",
+    "play-basic.png": "d67211b00c03238b5c9e726a840ce310aa615b84328d19d4886201822885fe41",
+    "play-intermediate.png": "226adfc7900e37d6616ff2ca10c7274dd61a2620d724107abb812972db707b77",
+    "play-advanced.png": "f2b6901aadd724c539e84346960d326c9a19e5da202f3364df2348a0d0da23a4",
+    "play-master.png": "7cbc9bdd45e560c10057c515b8f49a113c3229e1fb980df0587443ceefbf9013",
+    "restart-basic.png": "164c2ee698e68b84342f5785ed1295df7b874052c951e322fd2db9383ebec46c",
+    "win-basic.png": "a6542e3ffa3a837f0e1e1e5e116c5757c519bca535c09cd894b6146c5b19c77d",
+    "completed-basic.png": "3a31fa124569bf897fa46303fac8ac1e12cadac36b12e02205dfbdc79b165f4c"
+  }
+}

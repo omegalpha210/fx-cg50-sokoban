@@ -12,12 +12,14 @@ hashes are recorded in [asset provenance](docs/ASSET_PROVENANCE.md).
 | [fxSDK](https://git.planet-casio.com/Lephenixnoir/fxsdk) | External build/packaging tools and package-format reference. [MIT, gint/fxSDK contributors](docs/third_party/fxSDK-LICENSE.txt). |
 | [FxLibc](https://git.planet-casio.com/Vhex-Kernel-Core/fxlibc) | External native C library. [CC0-1.0](docs/third_party/fxlibc-LICENSE.txt), except separate third-party portions; the [Grisu2b MIT notice](docs/third_party/fxlibc-Grisu2b-LICENSE.txt) is retained. |
 | [OpenLibm SH port](https://git.planet-casio.com/Lephenixnoir/OpenLibm) | External native math library. [Combined upstream notices](docs/third_party/OpenLibm-LICENSE.md); individual component terms remain authoritative. |
-| [begoon/sokoban-maps](https://github.com/begoon/sokoban-maps/tree/7aacdd777e383c172fd1879b31999748d12404f1) | Referenced 60-map input pack extracted from DOS `pusher`; extraction repository attribution: Alexander Demin. Redistribution permission is unconfirmed. The public-source candidate excludes these maps, upstream reference files, generated embedded data, map-layout captures and bundled `.g3a` files. **The maps are not MIT-licensed by this project.** |
+| [begoon/sokoban-maps](https://github.com/begoon/sokoban-maps/tree/7aacdd777e383c172fd1879b31999748d12404f1) | Referenced 60-map input pack extracted from DOS `pusher`; extraction repository attribution: Alexander Demin. Redistribution permission is unconfirmed. The public-source candidate excludes these maps, upstream reference files, generated embedded data and bundled `.g3a` files. The owner requested selected actual-map README screenshots; their map geometry retains these separate rights, with no new upstream grant established. **The maps are not MIT-licensed by this project.** |
 
 The atlas and font data retain gint's permission statement. SOKOBAN icons and game
-geometry are project-created. Public screenshot demonstrations use the actual
-renderer and an original test layout; they do not reproduce the referenced
-60-map pack. Main and level selector examples contain only project UI geometry.
+geometry are project-created. Beta.4 README screenshots render original pack
+levels 1/16/31/59 and level 1 restart/completion, under the owner's narrow preview
+request. Their map layouts are third-party content, not project MIT artwork.
+Main and level menus contain project UI geometry. [Capture provenance](docs/screenshots/README.md)
+distinguishes host rendering from hardware photographs.
 
 CMake, Python, Pillow, GCC and binutils are external development tools. Their
 executables, SDK caches, source trees and toolchain archives are not part of this

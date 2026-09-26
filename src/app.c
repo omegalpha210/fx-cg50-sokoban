@@ -102,7 +102,8 @@ bool sok_app_key(SokApp *app,SokKey key)
         return false;
     }
     if(app->modal==SM_WIN) {
-        if(key==SK_EXIT || (key==SK_EXE && app->level==SOK_LEVEL_COUNT)) {
+        if(key==SK_EXIT) {app->modal=SM_NONE;transition(app);return true;}
+        if(key==SK_EXE && app->level==SOK_LEVEL_COUNT) {
             checkpoint(app,SA_LEVEL_MENU);return true;
         }
         if(key==SK_EXE) {app->target_level=app->level+1;checkpoint(app,SA_OPEN_LEVEL);return true;}
@@ -121,6 +122,11 @@ bool sok_app_key(SokApp *app,SokKey key)
         return false;
     }
     const SokMap *map=sok_get_map(app->level);
+    /* EXIT from Congratulations reveals the finished board. Its geometry and
+       counters stay fixed until leaving; an earned clear flag alone does not
+       lock a later replay of the same level. */
+    if(sok_solved(map,&app->game) && ((key>=SK_UP && key<=SK_LEFT)
+        || key==SK_F1 || key==SK_F2))return false;
     if(key>=SK_UP && key<=SK_LEFT) {
         if(!sok_move(map,&app->game,(SokDirection)key))return false;
         app->progress.dirty=true;

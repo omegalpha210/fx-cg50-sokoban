@@ -4,8 +4,10 @@ Audited 2026-09-17. The project's [MIT license](../LICENSE) covers project-autho
 source, documentation and original graphics. It does not grant rights to upstream
 maps, the gint font, or other separately identified dependencies. Map
 redistribution permission remains **unconfirmed**. The public-source candidate
-excludes upstream map files, generated map data, map-layout screenshots and the
-complete `.g3a` binary. This records inspected evidence, not a legal certification.
+excludes upstream map files, generated map data and the complete `.g3a` binary.
+The beta.4 README request makes a narrow exception for selected real-map
+screenshots; this is owner publication scope, not new upstream permission.
+This records inspected evidence, not a legal certification.
 See [publication audit](PUBLICATION_AUDIT.md) and
 [third-party notices](../THIRD_PARTY_NOTICES.md).
 
@@ -98,13 +100,17 @@ icon audit output retains numeric reference measurements and SOKOBAN artwork.
 The icon change supplies no new map-license evidence and changes none of the
 existing map/bundled-binary redistribution restrictions.
 
-Public UI examples use the actual application renderer with an original project
-test layout. They must be labeled as host-rendered demonstrations, not as original
-pack levels, calculator photographs or CPU-emulator captures. Main and numbered
-level-selector images contain no upstream board geometry. Any capture using a
-real pack layout remains excluded even if its filename says `fixture`, or its
-player, crates, counters or completion state have changed. Image captions use
-Pillow's bundled font through that tool; no standalone caption font is bundled.
+Beta.4 README images use the actual application renderer with unchanged pinned
+levels 1, 16, 31 and 59; restart/completion views use level 1. Completion comes
+from replaying legal input from its original start. These selected images are
+allowlisted under the owner's explicit request to show actual game puzzles,
+replacing the former independently authored test-map illustrations. This does
+not establish upstream redistribution permission or apply MIT to map geometry.
+Other real-map captures remain excluded. Main and numbered level menus contain
+project UI geometry. All images are labeled as host captures, not calculator
+photographs or CPU-emulator captures. See [capture provenance](screenshots/README.md).
+The original fixture remains a renderer test only. Palette-audit captions use
+Pillow's bundled font; no standalone caption font is bundled.
 
 ## SDK and library inventory
 

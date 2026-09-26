@@ -2,37 +2,64 @@
 
 ![SOKOBAN app icon](assets/icon-uns.png)
 
-A native C / fxSDK / gint Sokoban add-in: four groups of 15 levels, five-step
-undo, independent per-level automatic progress, and safe MENU / power-off
-checkpoints. **v0.1.0-beta.3 — HARDWARE RETEST REQUIRED.** This update reads SYSTEM
-Auto Power Off and Backlight Duration, adds a consistent blue diamond player,
-and improves save-failure recovery and control hints. Earlier basic play was
-reported working on an fx-CG50; the new idle power integration needs physical testing.
+A native C / fxSDK / gint Sokoban add-in with 60 levels, five-step undo,
+independent per-level progress and SYSTEM idle power settings.
+**v0.1.0-beta.4** adds four player colors and a completed-board view.
+[한국어 설명](README_KO.md)
 
-![Actual application renderer](docs/public-captures/overview.png)
+## Screens
 
-These are actual shared-renderer host captures. Gameplay, confirmation and
-completion illustrations use an independently authored MIT-licensed test map,
-not one of the referenced upstream puzzles. They are not calculator photographs.
+These images use the **actual application renderer and the pinned game maps**.
+They are pixel-exact 396×224 host captures, not calculator photographs or CPU
+emulation. The level 1 success screen comes from replaying 394 legal moves
+from the original starting position. [Capture details](docs/screenshots/README.md)
 
-## Source-only prerelease
+| Main | BASIC level menu, after clearing level 1 |
+|---|---|
+| ![Main](docs/screenshots/main.png) | ![BASIC levels](docs/screenshots/levels-basic.png) |
 
-The [GitHub prerelease](https://github.com/omegalpha210/fx-cg50-sokoban/releases/tag/v0.1.0-beta.3)
-publishes source and original illustration assets. **The upstream 60-map text,
-generated map pack, map screenshots, and bundled `SOKOBAN.g3a` are not distributed.**
-The maps are obtained from the referenced upstream source, but redistribution
-status is not yet confirmed. Public GitHub availability is not a redistribution
-grant. See [asset provenance](docs/ASSET_PROVENANCE.md).
+| BASIC · level 1 · blue player | INTERMEDIATE · level 16 · pink player |
+|---|---|
+| ![BASIC gameplay](docs/screenshots/play-basic.png) | ![INTERMEDIATE gameplay](docs/screenshots/play-intermediate.png) |
+| **ADVANCED · level 31 · violet player** | **MASTER · level 59 · mint player** |
+| ![ADVANCED gameplay](docs/screenshots/play-advanced.png) | ![MASTER gameplay](docs/screenshots/play-master.png) |
 
-The original game code is [MIT licensed](LICENSE). Third-party fonts, runtime
-libraries and adapted DIFF EQ tools retain their [separate notices](THIRD_PARTY_NOTICES.md).
-The MIT license does not apply to the upstream map pack.
+<details>
+<summary>Other group menus</summary>
+
+| INTERMEDIATE | ADVANCED |
+|---|---|
+| ![INTERMEDIATE levels](docs/screenshots/levels-intermediate.png) | ![ADVANCED levels](docs/screenshots/levels-advanced.png) |
+
+![MASTER levels](docs/screenshots/levels-master.png)
+
+</details>
+
+| Restart confirmation | Level completed |
+|---|---|
+| ![Restart level 1](docs/screenshots/restart-basic.png) | ![Congratulations](docs/screenshots/win-basic.png) |
+
+Press **EXIT on Congratulations to view the completed board**. Movement, INIT
+and UNDO are locked; INIT and UNDO appear gray. LEVEL− / LEVEL+ still work.
+Press EXIT again to return to the level menu; reopening the level starts a
+fresh attempt while keeping its earned clear marker. EXE on Congratulations
+opens the next level, or the level menu at level 60.
+
+![Completed board with INIT and UNDO disabled](docs/screenshots/completed-basic.png)
 
 ## Build and install locally
 
+The [GitHub prerelease](https://github.com/omegalpha210/fx-cg50-sokoban/releases/tag/v0.1.0-beta.4)
+is **source-only**. It includes the selected README screenshots requested by the
+project owner. Raw/generated map data and the map-containing `.g3a` are not
+published. Map redistribution permission remains unconfirmed; the selected
+screenshots do not change the maps' separate rights. Own code is [MIT](LICENSE).
+See [asset provenance](docs/ASSET_PROVENANCE.md) and
+[third-party notices](THIRD_PARTY_NOTICES.md).
+
 Use an existing fxSDK 2.11 / gint 2.11 / SH GCC installation. Configure PATH or
-`SOKOBAN_SDK_ROOT` and a Python 3 environment with Pillow; details are in
-[DEVELOPMENT.md](docs/DEVELOPMENT.md). Then explicitly obtain pinned inputs:
+`SOKOBAN_SDK_ROOT` and Python 3 with Pillow; see [DEVELOPMENT.md](docs/DEVELOPMENT.md).
+Explicitly obtain the pinned inputs and build:
 
 ```sh
 python3 tools/fetch_maps.py
@@ -41,64 +68,58 @@ bash tools/build.sh
 bash tools/test.sh
 ```
 
-The fetch command verifies immutable revision, byte sizes and SHA-256 hashes.
-Ordinary builds never download or update maps. Obtaining files does not establish
-permission to redistribute them or a resulting binary.
+Fetch verifies immutable revisions, sizes and SHA-256 hashes. Ordinary builds
+never download or update maps. Obtaining inputs does not establish permission
+to redistribute them or a resulting binary.
 
-The local build creates `dist/SOKOBAN.g3a` and `dist/SHA256SUMS.txt`. Connect the
-fx-CG50 in USB storage mode, copy the `.g3a` into storage memory, disconnect
-safely, and select SOKOBAN from CASIO MAIN MENU. App identity is `@SOKOBAN`;
+Copy the locally built `dist/SOKOBAN.g3a` to the fx-CG50 in USB storage mode,
+disconnect safely, and select SOKOBAN from CASIO MAIN MENU.
+`dist/SHA256SUMS.txt` records its checksum. App identity is `@SOKOBAN`;
 save files are `SOKO_A.dat` and `SOKO_B.dat`. DIFF EQ files are independent.
 
-## Controls
+## Controls and progress
 
 | Key | Action |
-| --- | --- |
-| Arrows in menus | LEFT/RIGHT move to the previous/next number, across row ends and wrapping the entire page. UP/DOWN wrap in the same column. |
-| 1–4 on Main | Open the corresponding group immediately. |
+|---|---|
+| Menu arrows | LEFT/RIGHT traverse numbers across row ends and wrap the page. UP/DOWN wrap within the same column. |
+| 1–4 on Main | Open a group immediately. |
 | EXE / F6 OPEN | Open the selected group or level. |
-| Arrows in play | Move the player; push one crate. |
-| F1 INIT | Restart the current level after EXE confirmation; EXIT cancels. |
-| F2 UNDO | Undo up to five successful moves, including pushes. |
-| F5 LEVEL- / F6 LEVEL+ | Checkpoint and open the adjacent global level; no 1↔60 wrap. |
-| EXIT | From play, save and return to its level menu; then return to Main. Main EXIT stays there. |
+| Play arrows | Move or push one crate. Locked on a completed board. |
+| F1 INIT | Restart confirmation: EXE restarts, EXIT cancels. Disabled on a completed board. |
+| F2 UNDO | Undo up to five successful moves or pushes. Disabled on a completed board. |
+| F5 LEVEL− / F6 LEVEL+ | Save and open the adjacent global level; no 1↔60 wrap. |
+| EXIT | Dismiss Congratulations to view the board; from play, save and return to the level menu; from the level menu, return to Main. |
 | MENU | Save and return to the actual CASIO MAIN MENU. |
-| SHIFT + AC/ON | Checkpoint dirty progress once, then power off through gint. A failed save does not trap power-off. |
+| SHIFT + AC/ON | Attempt one dirty checkpoint, then power off. A failed save does not trap power-off. |
 
-BASIC 1–15, INTERMEDIATE 16–30, ADVANCED 31–45 and MASTER 46–60 are user-defined
+BASIC 1–15, INTERMEDIATE 16–30, ADVANCED 31–45 and MASTER 46–60 are project-defined
 groups, not an upstream difficulty ranking. All levels are available immediately.
-Clear markers survive retries and INIT. Completion opens a small modal; EXE
-advances globally, while EXIT opens the level grid. Both open the grid at level60.
+The diamond retains the same shape at every tile size; its color and the restart
+dialog's accent follow the group. The HUD identifies it as YOU during play.
 
-Ordinary movement/undo changes RAM. Completion, INIT, play EXIT, level changes,
-MENU and dirty power-off requests checkpoint progress. Each level retains its
-own state and five undo records. Two slots preserve the last valid save through
-failed writes. Forced power loss does not promise every uncheckpointed step.
-A failed normal save offers retry/stay/continue without saving; OFF attempts once
-and shows a retry dialog after ON if the save failed. See the [user guide](docs/USER_GUIDE.md).
+Each level keeps its own state and five undo records. Completion, INIT, play
+EXIT, level changes, MENU and dirty power-off checkpoint progress. Two save
+slots preserve the last valid save through failed writes. Failed normal saves
+offer retry/stay/continue without saving; failed OFF saves offer recovery after
+ON. Forced power loss cannot preserve every uncheckpointed step.
+[Full user guide](docs/USER_GUIDE.md)
 
-SYSTEM idle settings are read on launch and after MENU/ON: Auto Power Off at
-10/60 minutes and backlight dimming at 30 seconds/1 minute/3 minutes. Any key,
-including an unused or held key, resets inactivity. The normal brightness is
-restored on activity; the OS preferences are not modified. Automatic OFF uses
-the same checkpoint as SHIFT+AC/ON. [Power details and firmware limits](docs/POWER.md).
+SYSTEM Auto Power Off (10/60 minutes) and Backlight Duration (30 seconds/1/3
+minutes) are read on launch and after MENU/ON. Any key, including an unused or
+held key, resets inactivity. Activity restores normal brightness; OS preferences
+are not modified. [Power details](docs/POWER.md)
 
-## Validation and remaining checks
+## Validation
 
-The player is a blue diamond with a dark edge at all 9–19px tile sizes; the HUD
-shows its YOU legend. Empty UNDO and unavailable adjacent levels appear disabled.
-Dialogs hide unrelated softkeys, and restart confirmation names the action.
-The engine, save-format version1, maps and beta.2 launcher icon are preserved.
+Host/UBSan tests cover game rules, storage failures, input transitions, idle
+power and completed-board controls. The actual level 1 replay checks the
+completion dialog and disabled buttons. The native package is compiled with
+strict warnings and validated before publication.
 
-![Player at every runtime tile size, enlarged 3x](docs/public-captures/player-sizes-3x.png)
+![Four player palettes at every runtime size, enlarged 3x](docs/public-captures/player-sizes-3x.png)
 
-Host tests and UBSan, strict SH compile/link, package checks, whole-pack integrity,
-mock native storage/power ordering, 100,000 mixed input events, and failures at
-105 native storage call boundaries are checked locally.
-The gameplay header's 24 pixels now expand the board viewport: 48 levels improve,
-12 stay the same, and the minimum tile rises from8 to9 pixels.
-
-Actual LCD brightness/legibility, physical SHIFT/AC behavior, real power
-cycling and persistence must be retested. [Acceptance](docs/ACCEPTANCE.md) records
-precise results and limits; [HARDWARE_RETEST.md](docs/HARDWARE_RETEST.md) is the
-checklist. [오류·안정성 상세 검증](docs/STABILITY_KO.md). [한국어 설명](README_KO.md).
+**Hardware retesting is still required** for LCD colors, physical key timing,
+SYSTEM brightness and real OFF/ON persistence. Host captures do not establish
+physical-device behavior. [Exact results](docs/ACCEPTANCE.md) ·
+[Hardware checklist](docs/HARDWARE_RETEST.md) ·
+[오류·안정성 상세 검증](docs/STABILITY_KO.md)

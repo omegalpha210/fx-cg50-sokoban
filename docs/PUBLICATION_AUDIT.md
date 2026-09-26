@@ -1,10 +1,11 @@
 # Source publication audit
 
-Audit date: **2026-09-17**. This document defines the material eligible for the
+Original rights audit: **2026-09-17**. Beta.4 scope update: **2026-09-27**.
+This document defines the material eligible for the
 public-source candidate; it does not certify legal rights or claim a remote push
 has happened. Actual publication status is reported separately.
 
-## Fresh map-rights evidence
+## Map-rights evidence inspected on 2026-09-17
 
 Both the pinned revision and current default-branch HEAD of
 [begoon/sokoban-maps](https://github.com/begoon/sokoban-maps) are
@@ -43,9 +44,8 @@ asset and repository preview:
 - `src/maps/generated_maps.c` and other packed or serialized upstream boards.
 - All `.g3a` packages containing the pack, package archives, and binary-download
   claims or checksums presented as available release assets.
-- Existing map captures/contact sheets, including pictures called `fixture` that
-  merely alter a real map's state. Use a separately authored layout for gameplay,
-  completion and confirmation examples, labeled as actual host renderer output.
+- Map captures/contact sheets outside the exact beta.4 README exception below.
+  Renaming a real-map picture `fixture` does not make it independently authored.
 - Private paths/configuration, tokens, PDFs/manual extracts, user files, logs,
   build caches/toolchains, DIFF EQ private history and diagnostic artifacts.
 
@@ -61,10 +61,11 @@ The beta.2 icon update preserves that public commit as its parent; it does not
 create another root or import local development history. Audit the allowlisted
 overlay in a checkout of the existing public repository, rebuild it with ignored
 local inputs, then append a normal commit and a new prerelease tag. Map policy
-and all exclusions above remain unchanged.
+and binary/private-history exclusions remain unchanged. The beta.4 screenshot
+exception is recorded below.
 
 Do not substitute a repeated test fixture as the product's real 60-level pack.
-It exists only for distributable host-rendered screenshots and tests. Ordinary
+It remains in renderer regression tests. Ordinary
 runtime map loading and local 60-map data remain unchanged.
 
 ## Copied utilities and font checks
@@ -105,3 +106,21 @@ main `ccaaa5ea5ec8af9571fb76ca3a62ec5c40523881`; beta.1 and beta.2 tags remain
 unchanged. New source, tests, docs and own-fixture illustrations are allowlisted.
 The same map/binary/private-material exclusions apply. A new beta.3 prerelease
 contains source only; no release binary is authorized by unresolved map rights.
+
+## beta.4 README exception and candidate
+
+The owner's 2026-09-26 request explicitly asks for actual game screens, one puzzle
+from each group, and no SAVE FAILED showcase image. This supersedes the earlier
+blanket screenshot exclusion for this specific README set. The exception covers
+only `tools/public_snapshot.py::SHOWCASE_FILES`: Main, four level menus, original
+levels 1/16/31/59, and level 1 restart, legal completion and completed-board views,
+with a provenance README and hash manifest. All 12 images are actual host-renderer
+output. It does not establish a license grant from the upstream rights holder.
+Map geometry remains outside this project's MIT license. No raw/generated pack,
+map-containing binary, full-pack capture set or private history is published.
+
+The candidate descends from public beta.3 commit
+`c04559eebf0ba7c60154b70d21935d78dbfa1e10`. Existing tags remain unchanged. Former
+fixture gameplay/error showcase images are removed from the current tree; public
+ancestry is preserved. Fresh candidate validation and source ZIP comparison are
+required before reporting completion of the beta.4 source-only prerelease.

@@ -295,6 +295,8 @@ static void test_completion_and_retry(void)
         last = near_completion(&app);
         CHECK(sok_app_key(&app, last));
         CHECK(sok_app_key(&app, SK_EXIT));
+        CHECK(app.screen == SOK_PLAY && app.modal == SM_NONE && sok_solved(sok_get_map(level), &app.game));
+        CHECK(sok_app_key(&app, SK_EXIT));
         CHECK(app.screen == SOK_LEVELS && app.selection == (level - 1u) % 15u);
     }
 }
@@ -397,6 +399,57 @@ static void test_menu_lifecycle_and_load_notice(void)
 static void release(SokApp *app, SokKey key)
 {
     CHECK(!sok_app_event(app, key, SE_UP));
+}
+static void test_completed_board_view(void)
+{
+    const unsigned levels[]={1,15,16,30,31,45,46,59,60};
+    for(unsigned i=0;i<sizeof(levels)/sizeof(levels[0]);i++) {
+        SokApp app;FakeHooks fake;init(&app,&fake);unsigned level=levels[i];
+        open_level(&app,level);CHECK(sok_app_key(&app,near_completion(&app)));
+        SokState solved=app.game;unsigned saves=fake.saves;
+        CHECK(sok_app_event(&app,SK_EXIT,SE_DOWN));
+        CHECK(app.modal==SM_NONE && app.screen==SOK_PLAY && fake.saves==saves);
+        CHECK(!sok_app_event(&app,SK_EXIT,SE_HOLD));
+        CHECK(!sok_app_event(&app,SK_EXIT,SE_DOWN));
+        release(&app,SK_EXIT);
+        const SokKey locked[]={SK_UP,SK_RIGHT,SK_DOWN,SK_LEFT,SK_F1,SK_F2};
+        for(unsigned j=0;j<sizeof(locked)/sizeof(locked[0]);j++) {
+            CHECK(!sok_app_key(&app,locked[j]));
+            CHECK(board_equal(sok_get_map(level),&solved,&app.game));
+            CHECK(app.modal==SM_NONE && fake.saves==saves && !app.progress.dirty);
+        }
+        CHECK(sok_app_key(&app,SK_MENU));
+        CHECK(fake.os_calls==1 && app.modal==SM_NONE && app.screen==SOK_PLAY);
+        CHECK(sok_app_power_off(&app));
+        CHECK(board_equal(sok_get_map(level),&solved,&app.game));
+        if(level==1)CHECK(!sok_app_key(&app,SK_F5));
+        if(level==60)CHECK(!sok_app_key(&app,SK_F6));
+        CHECK(sok_app_key(&app,level==60 ? SK_F5:SK_F6));
+        CHECK(app.level==(level==60 ? 59:level+1));
+        CHECK(app.progress.cleared[level-1]);
+        open_level(&app,level);
+        CHECK(!sok_solved(sok_get_map(level),&app.game) && app.game.moves==0);
+        CHECK(app.progress.cleared[level-1]);
+        (void)first_move(&app);CHECK(sok_app_key(&app,SK_F2));
+        CHECK(sok_app_key(&app,SK_F1) && app.modal==SM_INIT);
+        CHECK(sok_app_key(&app,SK_EXIT));
+        CHECK(sok_app_key(&app,near_completion(&app)));
+        CHECK(sok_app_key(&app,SK_EXIT)); /* view */
+        CHECK(sok_app_key(&app,SK_EXIT)); /* grid */
+        CHECK(app.screen==SOK_LEVELS && app.selection==(level-1)%15);
+    }
+    SokApp app;FakeHooks fake;init(&app,&fake);open_level(&app,1);
+    fake.fail=true;CHECK(sok_app_key(&app,near_completion(&app)));
+    CHECK(app.modal==SM_SAVE_ERROR);CHECK(sok_app_key(&app,SK_EXIT));
+    CHECK(app.modal==SM_WIN);CHECK(sok_app_key(&app,SK_EXIT));
+    CHECK(app.modal==SM_NONE && app.progress.dirty);
+    CHECK(!sok_app_key(&app,SK_F1) && !sok_app_key(&app,SK_F2));
+    CHECK(sok_app_key(&app,SK_F6) && app.modal==SM_SAVE_ERROR);
+    CHECK(sok_app_key(&app,SK_EXIT) && app.modal==SM_NONE && app.level==1);
+    CHECK(sok_app_key(&app,SK_EXIT) && app.modal==SM_SAVE_ERROR);
+    fake.fail=false;CHECK(sok_app_key(&app,SK_EXE));
+    CHECK(app.screen==SOK_LEVELS && !app.progress.dirty && fake.persisted.cleared[0]);
+    CHECK(sok_app_key(&app,SK_EXE));CHECK(app.game.moves==0 && app.progress.cleared[0]);
 }
 static void test_off_failure_resume_and_menu(void)
 {
@@ -517,6 +570,7 @@ int main(void)
     test_save_failure_paths();
     test_menu_lifecycle_and_load_notice();
     test_hold_and_input_barriers();
+    test_completed_board_view();
     test_off_failure_resume_and_menu();
     test_mixed_event_stress();
     printf("workflow: %u assertions passed (navigation, progress, lifecycle, input)\n",

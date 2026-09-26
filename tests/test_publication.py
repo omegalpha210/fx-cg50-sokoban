@@ -36,4 +36,13 @@ class PublicationTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,'must not exist'):
             public.export(ROOT,ROOT)
 
+    def test_only_requested_readme_screenshots_are_allowlisted(self):
+        chosen={p.as_posix() for p in public.selected_files(ROOT)}
+        self.assertTrue(public.SHOWCASE_FILES.issubset(chosen))
+        self.assertEqual(len(public.SHOWCASE_IMAGES),12)
+        for name in ('docs/screenshots/play-60.png','docs/screenshots/save-failed.png',
+                     'docs/captures/play-01.png'):
+            self.assertNotIn(name,chosen)
+            with self.assertRaises(ValueError):public.audit_files(ROOT,[Path(name)])
+
 if __name__=='__main__':unittest.main()

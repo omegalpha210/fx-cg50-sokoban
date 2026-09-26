@@ -2,7 +2,8 @@
 
 ## Goal and counters
 
-Move the blue diamond marked YOU in the HUD with the arrow keys. Push the orange crates
+Move the diamond marked YOU in the HUD with the arrow keys. BASIC uses blue,
+INTERMEDIATE pink, ADVANCED violet and MASTER mint. Push the orange crates
 onto every dark goal dot. Walls and exterior space are impassable. You may
 push one crate into an empty floor/goal square; you cannot pull crates or push
 two together. Orange crates retain their color on a goal and gain a white mark.
@@ -43,7 +44,8 @@ Control keys act on fresh presses, so holding F2 does not consume all five.
 
 F1 INIT opens `RESTART LEVEL?` with `EXE: RESTART` and `EXIT: CANCEL`. Nothing changes until
 EXE. Confirmation resets this level's layout, counters and undo, then checkpoints
-it. Its earned completion and other levels remain intact.
+it. Its earned completion and other levels remain intact. The panel's top stripe
+matches the current group's player color.
 
 F5 LEVEL- / F6 LEVEL+ checkpoints and opens the adjacent global level, including
 15→16, 30→31 and 45→46. Level 1 has no predecessor and 60 has no successor;
@@ -54,9 +56,13 @@ softkeys; the save-error dialog labels F6 as SKIP.
 ## Completion and resume
 
 The last successful push onto the remaining goal marks completion, checkpoints,
-and shows `Congratulations!`. EXE opens the next global level; EXIT returns to
-the current level's grid, selecting that level. At level 60 both choices open
-the level menu. Held movement cannot leak through the modal into the next level.
+and shows `Congratulations!`. EXE opens the next global level, or the level menu
+at level 60. EXIT dismisses the dialog to show the completed board, at every
+level. Arrows, F1 INIT and F2 UNDO are locked there; INIT/UNDO are gray and the HUD
+reads COMPLETED / EXIT: LEVELS. F5/F6 still open adjacent levels within bounds.
+Press EXIT again to return to the current level's grid. To replay, reopen that
+level from the grid. MENU and SHIFT+AC/ON remain available in the board view.
+A release barrier prevents the same held EXIT from immediately opening the grid.
 
 Completion flags never disappear on retry, INIT or UNDO. A completed board is
 not stored as an in-progress resume, preventing repeated congratulations at

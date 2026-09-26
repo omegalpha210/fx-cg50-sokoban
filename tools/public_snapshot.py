@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Export an audited source-only snapshot without development Git history.
 
-No remote mutation happens here. Map inputs, embedded output and map captures are
-excluded until redistribution conditions are established. The output is a NEW,
+No remote mutation happens here. Map inputs and embedded output are excluded.
+Only the owner's explicitly requested README screenshots are allowlisted. The output is a NEW,
 empty directory, so this tool never deletes or rewrites an existing checkout.
 """
 import argparse
@@ -17,6 +17,11 @@ TOP=('AGENTS.md','README.md','README_KO.md','LICENSE','THIRD_PARTY_NOTICES.md','
 DOCS=('USER_GUIDE.md','DEVELOPMENT.md','ASSET_PROVENANCE.md','PUBLICATION_AUDIT.md',
       'ACCEPTANCE.md','HARDWARE_RETEST.md','MAPS_AUDIT.md','MEMORY.md','STORAGE.md',
       'POWER.md','STABILITY_KO.md','LAYOUT_AUDIT.md','ICON_AUDIT.md','ICON_AUDIT.json')
+SHOWCASE_IMAGES=('main','levels-basic','levels-intermediate','levels-advanced','levels-master',
+                 'play-basic','play-intermediate','play-advanced','play-master',
+                 'restart-basic','win-basic','completed-basic')
+SHOWCASE_FILES={f'docs/screenshots/{name}.png' for name in SHOWCASE_IMAGES}
+SHOWCASE_FILES.update(('docs/screenshots/README.md','docs/screenshots/manifest.json'))
 PUBLIC_IGNORE='''# Generated/local material is not licensed for bundled public redistribution.
 .local/
 build-cg/
@@ -42,7 +47,7 @@ def audit_files(root, paths):
     errors=[]
     for relative in paths:
         name=relative.as_posix();path=root/relative
-        if name.startswith(BANNED_PREFIXES) or name in BANNED_EXACT or path.suffix.lower() in ('.pdf','.g3a','.exe','.o','.obj','.bin'):
+        if (name.startswith('docs/screenshots/') and name not in SHOWCASE_FILES) or name.startswith(BANNED_PREFIXES) or name in BANNED_EXACT or path.suffix.lower() in ('.pdf','.g3a','.exe','.o','.obj','.bin'):
             errors.append(f'Excluded publication path: {name}');continue
         if path.is_symlink() or not path.is_file():
             errors.append(f'Not a regular source file: {name}');continue
@@ -60,6 +65,7 @@ def selected_files(root):
                 rel=p.relative_to(root)
                 if rel.as_posix() not in BANNED_EXACT:files.add(rel)
     files.update(Path('docs')/x for x in DOCS)
+    files.update(Path(x) for x in SHOWCASE_FILES)
     for folder in ('docs/third_party','docs/public-captures','assets/font'):
         files.update(p.relative_to(root) for p in (root/folder).rglob('*') if p.is_file())
     files.update(p.relative_to(root) for p in (root/'assets').glob('icon-*.png'))
@@ -78,7 +84,7 @@ def export(root,destination):
     paths.append(Path('.gitignore'))
     audit_files(destination,paths)
     manifest={p.as_posix():hashlib.sha256((destination/p).read_bytes()).hexdigest() for p in sorted(paths)}
-    print(f'Exported {len(paths)} public-safe source/notice/fixture files; no map pack or binary.')
+    print(f'Exported {len(paths)} audited source/notice/authorized-preview files; no map pack or binary.')
     return manifest
 
 def main():

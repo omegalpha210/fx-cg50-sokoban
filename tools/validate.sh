@@ -9,6 +9,7 @@ bash tools/build.sh 2>&1 | tee .local/validation/build.log
 bash tools/test.sh 2>&1 | tee .local/validation/tests.log
 "$SOKOBAN_PYTHON" tools/captures.py
 "$SOKOBAN_PYTHON" tools/public_captures.py
+"$SOKOBAN_PYTHON" tools/showcase.py
 "$SOKOBAN_PYTHON" tools/layout_audit.py --check --capture-csv build-host/captures/layout.csv > .local/validation/layout-summary.json
 "$SOKOBAN_PYTHON" tools/memory_report.py
 fxgxa -d dist/SOKOBAN.g3a > .local/validation/fxgxa-dump.txt
@@ -21,6 +22,7 @@ fxgxa -d dist/SOKOBAN.g3a > .local/validation/fxgxa-dump.txt
   build-host/test_idle
   build-host/test_system_power
   build-host/capture_public build-host/public-captures
+  build-host/capture_showcase build-host/showcase
   build-host/capture build-host/captures
   "$SOKOBAN_PYTHON" tools/verify_g3a.py dist/SOKOBAN.g3a
 } | tee docs/validation/results.txt

@@ -1,9 +1,24 @@
-# Hardware retest — v0.1.0-beta.3
+# Hardware retest — v0.1.0-beta.4
 
-Earlier basic play was reported working. All new beta.3 checks below are
+Earlier basic play was reported working. All new beta.4 checks below are
 **NOT RUN on hardware**. Record calculator/OS version, package SHA-256,
 tester/date and PASS / FAIL / NOT RUN. Back up both SOKOBAN save files before
 intentionally testing corruption or storage failure.
+
+## New beta.4 controls and colors (all NOT RUN on hardware)
+
+1. Compare BASIC blue, INTERMEDIATE pink, ADVANCED violet and MASTER mint players
+   against walls, crates and goals, including level 59 at 9px and low brightness.
+2. Confirm restart's top stripe matches each group's player color.
+3. Solve a level, then press EXIT: the dialog closes onto the completed board.
+   Holding EXIT must not skip straight to the menu. INIT/UNDO are gray; arrows,
+   F1 and F2 change no positions, counters, history or clear flags.
+4. F5/F6 still work, including 15/16, 30/31, 45/46; level 1/60 bounds remain.
+   EXIT from the board opens the level menu. Reopening starts a playable fresh
+   board with its clear marker retained. Repeat at level 60.
+5. MENU and manual/automatic OFF from the completed view preserve it on suspended
+   return. If a completion save failed, dirty progress must still retry on leave.
+
 
 ## Priority: SYSTEM settings, dimming and auto OFF
 
@@ -36,7 +51,7 @@ intentionally testing corruption or storage failure.
 ## Priority: player and control clarity
 
 1. Compare level59 and the other 9px boards with larger boards: identify the
-   blue diamond separately from dark goal dots and orange crates at native LCD size.
+   group-colored diamond separately from dark goal dots and orange crates at native LCD size.
 2. Check all four wall palettes, normal/lowest brightness, and a player on a goal.
 3. Confirm the YOU legend matches the board marker at every scale.
 4. Empty UNDO, level1 LEVEL- and level60 LEVEL+ look disabled and do nothing.
@@ -129,7 +144,7 @@ Do not mark these checks passed from PNG/package tests.
 
 ## LCD/input/resources
 
-35. Distinguish9px wall/floor/goal/orange crate/white arrival mark/black player on
+35. Distinguish9px wall/floor/goal/orange crate/white arrival mark/colored diamond player on
     the physical LCD, including gold walls and white completed-grid numbers.
 36. Direction repeat begins after approximately500ms then remains at125ms without
     acceleration. Blocked moves do not alter counters/history.

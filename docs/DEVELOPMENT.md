@@ -51,14 +51,16 @@ bash tools/build.sh
 bash tools/test.sh
 bash -c 'source tools/env.sh; "$SOKOBAN_PYTHON" tools/captures.py'
 bash -c 'source tools/env.sh; "$SOKOBAN_PYTHON" tools/public_captures.py'
+bash -c 'source tools/env.sh; "$SOKOBAN_PYTHON" tools/showcase.py'
 bash -c 'source tools/env.sh; "$SOKOBAN_PYTHON" tools/memory_report.py'
 ```
 
 Local `build-host/`, `build-cg/`, `.local/`, `dist/`, downloaded/generated map data,
-and full-map captures are not public source assets. The normal package is
+and the full-pack capture set are not public source assets. Only the selected
+README images in `docs/screenshots/` are allowlisted. The normal package is
 `dist/SOKOBAN.g3a`, with `dist/SHA256SUMS.txt`. Program name/internal identity
-remain `SOKOBAN` / `@SOKOBAN`. The prerelease is `v0.1.0-beta.3`; the numeric CASIO
-version field is `00.01.0003` (the CASIO field has no beta suffix).
+remain `SOKOBAN` / `@SOKOBAN`. The prerelease is `v0.1.0-beta.4`; the numeric CASIO
+version field is `00.01.0004` (the CASIO field has no beta suffix).
 
 `tools/package.sh` honors `SOURCE_DATE_EPOCH` for a fixed UTC header date. Set the
 same value when comparing local and clean-public-source builds. Without it,
@@ -82,7 +84,7 @@ Opaque 92×64 PNGs retain 22 clear lower rows; the selected state changes only
 the surrounding background. Regenerate with `python3 tools/make_icons.py`, then
 `python3 tools/icon_audit.py`. [ICON_AUDIT.md](ICON_AUDIT.md) records pixel bounds,
 8× previews, an explicitly illustrative label mock and native RGB565 verification.
-The beta.2 icon is retained in beta.3. The game rules, map pack and save format remain unchanged.
+The beta.2 icon is retained in beta.4. The game rules, map pack and save format remain unchanged.
 
 Raw `keydev_read(...,false,NULL)` retains release events and leaves MENU/OFF
 under application control. The main loop checks the RTC idle policy and sleeps
@@ -113,14 +115,20 @@ The owner's explicit request authorizes a public source repository and prereleas
 Development history contains locally retained map content and must remain local.
 `tools/public_snapshot.py NEW_DIRECTORY` exports an allowlisted clean candidate;
 it never rewrites an existing directory or mutates a remote. It excludes raw and
-generated maps, bundled binaries, full-map captures, private logs/configuration,
+generated maps, bundled binaries, captures outside the explicit README allowlist,
+private logs/configuration,
 manuals/toolchains and Git history. `--check-tracked` audits a candidate's tracked
 paths and contents for those exclusions, private paths and credential patterns.
 
-The public screenshots link the same renderer to `tests/public/fixture.c`, an
-independently authored illustration map. This fixture is not a substitute for the
-product's real60 maps and is never linked into the calculator executable.
-[PUBLICATION_AUDIT.md](PUBLICATION_AUDIT.md) records current rights evidence.
+`tests/showcase.c` links the actual app and renderer with unchanged pinned maps.
+It opens levels 1/16/31/59 through normal input and solves level 1 by replaying
+394 legal moves; no board or counters are fabricated. `tools/showcase.py` converts
+its pixels losslessly into the 12 allowlisted README images and a hash manifest.
+They are host-rendered, not hardware photographs. The owner's request is a
+screenshot-only publication exception, not an upstream license grant.
+`tests/public/fixture.c` remains an original map used only in renderer regression
+tests; its SAVE FAILED capture is not part of the README gallery.
+[PUBLICATION_AUDIT.md](PUBLICATION_AUDIT.md) records evidence and publication scope.
 
 Before publishing, explicitly fetch/import pinned inputs inside the candidate,
 run its complete validation from a clean build, verify icon bytes/package and

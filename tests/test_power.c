@@ -262,6 +262,11 @@ static void dirty_save_error(void)
     assert(sok_app_key(&app,SK_EXIT));assert(saves==1 && app.modal==SM_SAVE_ERROR);
     saves=0;expected_modal=SM_SAVE_ERROR;
 }
+static void dirty_completed_board(void)
+{
+    dirty_win_modal();assert(sok_app_key(&app,SK_EXIT));
+    assert(app.modal==SM_NONE && app.screen==SOK_PLAY);expected_modal=SM_NONE;
+}
 static void dirty_main(void)
 {
     dirty_move();assert(sok_progress_checkpoint(&app.progress,1,&app.game,false));
@@ -289,7 +294,7 @@ static void previous_save_then_change(void)
 static void check_dirty_screens(void)
 {
     void (*const fixtures[])(void)={dirty_move,dirty_push,dirty_undo,dirty_init_modal,
-        dirty_win_modal,dirty_save_error,dirty_main,dirty_levels,dirty_load_notice};
+        dirty_win_modal,dirty_completed_board,dirty_save_error,dirty_main,dirty_levels,dirty_load_notice};
     for(unsigned i=0;i<sizeof(fixtures)/sizeof(fixtures[0]);i++) {
         const Step steps[]={CHECK(fixtures[i]),DOWN(KEY_SHIFT),UP(KEY_SHIFT),
             DOWN(KEY_ACON),CHECK(assert_once_saved),HOLD(KEY_ACON),DOWN(KEY_ACON),
@@ -335,7 +340,7 @@ static void check_idle_lifecycle(void)
         UP(KEY_0),WAIT(29),CHECK(assert_no_dim),WAIT(1),CHECK(assert_dimmed)};
     RUN(held_key);
     void (*const fixtures[])(void)={dirty_move,dirty_push,dirty_undo,dirty_init_modal,
-        dirty_win_modal,dirty_save_error,dirty_main,dirty_levels,dirty_load_notice};
+        dirty_win_modal,dirty_completed_board,dirty_save_error,dirty_main,dirty_levels,dirty_load_notice};
     for(unsigned i=0;i<sizeof(fixtures)/sizeof(fixtures[0]);i++) {
         const Step steps[]={CHECK(fixtures[i]),WAIT(30),WAIT(569),CHECK(assert_none),
             WAIT(1),CHECK(assert_auto_saved),WAIT(1)};

@@ -8,8 +8,9 @@
 #define LINE C_RGB(24,26,26)
 #define PAPER C_RGB(29,30,30)
 #define ORANGE C_RGB(31,18,3)
-#define PLAYER C_RGB(0,17,31)
-#define PLAYER_EDGE C_RGB(0,5,15)
+/* Each fill contrasts with its group's wall and with the shared orange crate. */
+static const int players[4]={C_RGB(0,17,31),C_RGB(30,4,23),C_RGB(15,6,31),C_RGB(0,25,20)};
+static const int player_edges[4]={C_RGB(0,5,15),C_RGB(12,0,8),C_RGB(5,1,14),C_RGB(0,8,6)};
 static const int pale[4]={C_RGB(25,30,25),C_RGB(25,29,31),C_RGB(31,29,22),C_RGB(31,26,25)};
 static const int group_color[4]={C_RGB(3,16,8),C_RGB(3,12,23),C_RGB(16,11,0),C_RGB(23,5,5)};
 static const int walls[4]={C_RGB(7,21,11),C_RGB(6,16,28),C_RGB(26,20,4),C_RGB(27,8,7)};
@@ -53,6 +54,7 @@ static void title(const char *s,const char *right)
 static void softkeys(const SokApp *app)
 {
     bool play=app->screen==SOK_PLAY;
+    bool complete=play && sok_solved(sok_get_map(app->level),&app->game);
     const char *labels[6]={"","","","","","OPEN"};
     if(play){labels[0]="INIT";labels[1]="UNDO";labels[4]="LEVEL-";labels[5]="LEVEL+";}
     if(app->modal!=SM_NONE) {
@@ -62,7 +64,8 @@ static void softkeys(const SokApp *app)
     rect(0,SOK_SOFTKEY_TOP,396,20,C_WHITE);
     for(int i=0;i<6;i++) {
         if(!labels[i][0])continue;
-        bool disabled=play && app->modal==SM_NONE && ((i==1 && !app->game.undo_count)
+        bool disabled=play && app->modal==SM_NONE && ((i<2 && complete)
+            || (i==1 && !app->game.undo_count)
             || (i==4 && app->level==1) || (i==5 && app->level==SOK_LEVEL_COUNT));
         int bg=disabled ? LINE:INK;
         if(!disabled && play && app->modal==SM_NONE && i==0)bg=C_RGB(31,25,12);
@@ -100,15 +103,18 @@ static void level_screen(const SokApp *app)
     }
     text(9,193,"EXE: OPEN    EXIT: GROUPS",MUTED,1);softkeys(app);
 }
-void sok_draw_player(int x,int y,int size)
+int sok_player_color(unsigned group)
+{return players[group<4 ? group:0];}
+void sok_draw_player(int x,int y,int size,unsigned group)
 {
-    /* One silhouette at every tile size: blue diamond, dark edge, white glint.
+    /* One silhouette at every tile size: colored diamond, dark edge, white glint.
        At 9 px the marker is 7 px wide; a goal is only a 2 px dark square. */
     int radius=(size-3)/2,cx=x+size/2,cy=y+size/2;
+    if(group>=4)group=0;
     for(int dy=-radius;dy<=radius;dy++) {
         int extent=radius-(dy<0 ? -dy:dy);
-        rect(cx-extent,cy+dy,extent*2+1,1,PLAYER_EDGE);
-        if(extent>0)rect(cx-extent+1,cy+dy,extent*2-1,1,PLAYER);
+        rect(cx-extent,cy+dy,extent*2+1,1,player_edges[group]);
+        if(extent>0)rect(cx-extent+1,cy+dy,extent*2-1,1,players[group]);
     }
     int glint=size>=14 ? 2:1;
     rect(cx-glint+1,cy-glint,glint,glint,C_WHITE);
@@ -145,7 +151,7 @@ static void cell(const SokApp *app,const SokMap *map,unsigned p,int x,int y,int 
         }
     }
     if(app->game.player==p) {
-        sok_draw_player(x,y,s);
+        sok_draw_player(x,y,s,(app->level-1)/15);
     }
 }
 static void stat(int y,const char *label,const char *value)
@@ -163,8 +169,12 @@ static void play_screen(const SokApp *app)
     snprintf(label,sizeof(label),"%u/%u",sok_on_goals(map,&app->game),map->crate_count);stat(56,"CRATES :",label);
     snprintf(label,sizeof(label),"%lu",(unsigned long)app->game.moves);stat(89,"MOVES :",label);
     snprintf(label,sizeof(label),"%lu",(unsigned long)app->game.pushes);stat(122,"PUSHES :",label);
-    snprintf(label,sizeof(label),"UNDO %u/5",app->game.undo_count);text(9,161,label,MUTED,1);
-    sok_draw_player(8,183,13);text(26,185,"YOU",MUTED,1);
+    if(sok_solved(map,&app->game)) {
+        text(9,161,"COMPLETED",INK,1);text(9,185,"EXIT: LEVELS",MUTED,1);
+    } else {
+        snprintf(label,sizeof(label),"UNDO %u/5",app->game.undo_count);text(9,161,label,MUTED,1);
+        sok_draw_player(8,183,13,(app->level-1)/15);text(26,185,"YOU",MUTED,1);
+    }
     rect(120,SOK_PLAY_TOP,1,SOK_PLAY_HEIGHT,LINE);
     SokBoardLayout l=sok_board_layout(map);
     for(unsigned p=0;p<(unsigned)map->width*map->height;p++)
@@ -178,12 +188,14 @@ static void modal(const SokApp *app)
     int x=(396-w)/2;
     int y=app->screen==SOK_PLAY ? SOK_PLAY_TOP+(SOK_PLAY_HEIGHT-h)/2:(224-h)/2;
     rect(x+4,y+4,w,h,C_RGB(12,14,14));rect(x,y,w,h,C_WHITE);border(x,y,w,h,INK,2);
-    rect(x+2,y+2,w-4,5,app->modal==SM_SAVE_ERROR ? C_RGB(27,5,5):C_RGB(8,19,14));
+    int accent=app->modal==SM_SAVE_ERROR ? C_RGB(27,5,5):
+        app->screen==SOK_PLAY ? sok_player_color((app->level-1)/15):C_RGB(8,19,14);
+    rect(x+2,y+2,w-4,5,accent);
     const char *heading="",*a="",*b="",*c=NULL;
     switch(app->modal) {
     case SM_INIT:heading="RESTART LEVEL?";a="EXE: RESTART";b="EXIT: CANCEL";break;
     case SM_WIN:heading="Congratulations!";
-        a=app->level==60 ? "EXE: LEVEL MENU":"EXE: NEXT LEVEL";b="EXIT: LEVEL MENU";break;
+        a=app->level==60 ? "EXE: LEVEL MENU":"EXE: NEXT LEVEL";b="EXIT: VIEW BOARD";break;
     case SM_SAVE_ERROR:heading="SAVE FAILED";a="EXE: RETRY";b="F6: WITHOUT SAVING";c="EXIT: STAY";break;
     case SM_LOAD_NOTICE:heading=app->recovered_notice ? "BACKUP RECOVERED":"SAVE UNAVAILABLE";
         a=app->recovered_notice ? "Using the last valid save.":"Starting with fresh progress.";
