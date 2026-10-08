@@ -212,5 +212,9 @@ void sok_render(const SokApp *app)
     else if(app->screen==SOK_LEVELS)level_screen(app);
     else play_screen(app);
     if(app->modal!=SM_NONE)modal(app);
+    if(app->menu_input_error){
+        rect(0,0,396,20,C_WHITE);
+        text(8,5,"MENU INPUT BUSY - RELEASE AND RETRY",C_RGB(27,5,5),1);
+    }
     dupdate();
 }

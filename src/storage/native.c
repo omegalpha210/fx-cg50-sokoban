@@ -133,3 +133,21 @@ bool sok_storage_save(SokProgress *progress)
     return save_transaction(progress) != 0;
 #endif
 }
+
+#ifdef FXCG50
+static int cleanup_transaction(void *unused)
+{
+    (void)unused;
+    if(pending_close<0)return 1;
+    if(BFile_Close(pending_close)<0)return 0;
+    pending_close=-1;return 1;
+}
+#endif
+bool sok_storage_cleanup(void)
+{
+#ifdef FXCG50
+    return gint_world_switch(GINT_CALL(cleanup_transaction,(void *)NULL))!=0;
+#else
+    return true;
+#endif
+}

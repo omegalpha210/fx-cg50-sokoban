@@ -14,6 +14,7 @@ int gint_world_switch(gint_call_t call)
 int sok_os_auto_power_off(void){assert(os_world);reads++;return 60;}
 char sok_os_backlight_duration(void){assert(os_world);reads++;return 6;}
 char sok_os_light_level(void){assert(os_world);reads++;return 4;}
+int sok_os_enable_menu_return(void){assert(os_world);reads++;return 0;}
 void sok_os_set_backlight(char level)
 {assert(os_world && level>=0 && level<=5);writes++;brightness=level;}
 int main(void)

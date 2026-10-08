@@ -1,8 +1,14 @@
 /* Compile the actual native entry point, replacing only hardware callbacks.
  * The real input, workflow, save codec and two-slot transaction are linked. */
 #define main sok_native_main
-#include "../src/main.c"
+#ifndef SOK_NATIVE_MAIN_SOURCE
+#define SOK_NATIVE_MAIN_SOURCE "../src/main.c"
+#endif
+#include SOK_NATIVE_MAIN_SOURCE
 #undef main
+MockUsbCpg mock_usb_cpg;
+MockUsbPower mock_usb_power;
+MockUsbRegisters mock_usb_registers={.SYSCFG={1}};
 #include <assert.h>
 #include <setjmp.h>
 #include <stdio.h>
@@ -20,6 +26,10 @@ static unsigned settings_reads,dim_calls,restore_calls,sleeps;
 static uint32_t clock_ticks;
 static SokPowerSettings system_settings;
 static SokLoadResult load_result=SOK_LOAD_NEW;
+static bool usb_close_ok=true;
+static unsigned usb_cleanups;
+static bool plug_on_write;
+bool sok_storage_cleanup(void){usb_cleanups++;return usb_close_ok;}
 static bool held[256],fail_write,transaction_active,check_snapshot;
 static bool opened,writing,exists[2];
 static uint8_t records[2][SOK_SAVE_MAX_SIZE];
@@ -32,6 +42,8 @@ static SokScreen expected_screen;
 static SokModal expected_modal;
 static jmp_buf finished;
 static keydev_t keyboard;
+static uint32_t read_scan;
+static bool require_menu_quiet;
 static uint16_t dummy_vram;
 uint16_t *gint_vram=&dummy_vram;
 
@@ -53,6 +65,7 @@ static ptrdiff_t mock_read(void *context,int fd,void *buffer,size_t length)
 }
 static ptrdiff_t mock_write(void *context,int fd,const void *buffer,size_t length)
 {
+    if(plug_on_write)mock_usb_registers.INTSTS0.VBSTS=1;
     (void)context;assert(transaction_active && opened && writing);
     assert(fd==(int)active_slot);
     if(fail_write)return -1;
@@ -104,12 +117,16 @@ void gint_poweroff(bool show_logo)
 }
 void gint_osmenu(void)
 {
+    if(require_menu_quiet){
+        assert(keyboard.queue_next==keyboard.queue_end);
+        for(unsigned row=0;row<12;row++)assert(!keyboard.state_now[row] && !keyboard.state_queue[row]);
+    }
     assert(!transaction_active && !opened);++menus;
     /* Simulate changing settings and the clock while in SYSTEM. */
     system_settings=(SokPowerSettings){60,6,3};clock_ticks=123456;
 }
 uint32_t rtc_ticks(void){return clock_ticks%SOK_DAY_TICKS;}
-void sleep(void){++sleeps;}
+void sleep(void){++sleeps;++keyboard.time;clock_ticks=(clock_ticks+1)%SOK_DAY_TICKS;}
 void sok_system_power_settings(SokPowerSettings *settings)
 {*settings=system_settings;++settings_reads;}
 void sok_system_backlight(int level)
@@ -128,7 +145,7 @@ void dsetvram(uint16_t *first,uint16_t *second)
 {assert(first==gint_vram && !second);}
 void sok_render(const SokApp *current){assert(current==&app);++renders;}
 void clearevents(void){++barriers;}
-bool keydown(int key){assert(key>=0 && key<256);return held[key];}
+bool keydown(int key){assert(key>=0 && key<256);return (keyboard.state_queue[(unsigned)key>>4]&(1u<<(7-(key&7))))!=0;}
 keydev_t *keydev_std(void){return &keyboard;}
 void keydev_set_transform(keydev_t *device,keydev_transform_t transform)
 {
@@ -141,19 +158,30 @@ void keydev_set_transform(keydev_t *device,keydev_transform_t transform)
 key_event_t keydev_read(keydev_t *device,bool wait,volatile int *timeout)
 {
     assert(device==&keyboard && !wait && !timeout);
+    if(read_scan==keyboard.time)return (key_event_t){KEYEV_NONE,0};
+    read_scan=keyboard.time;
     while(script_index<script_count) {
         Step next=script[script_index++];
         if(next.check){next.check();continue;}
         clock_ticks=(clock_ticks+next.elapsed)%SOK_DAY_TICKS;
         if(next.event.type==KEYEV_DOWN)held[next.event.key]=true;
         else if(next.event.type==KEYEV_UP)held[next.event.key]=false;
+        unsigned row=next.event.key>>4;uint8_t bit=(uint8_t)(1u<<(7-(next.event.key&7)));
+        if(next.event.type==KEYEV_DOWN)keyboard.state_now[row]|=bit;
+        else if(next.event.type==KEYEV_UP)keyboard.state_now[row]&=(uint8_t)~bit;
+        keyboard.state_queue[row]=keyboard.state_now[row];
         return next.event;
     }
     longjmp(finished,1);
 }
 static void run(const Step *steps,unsigned count)
 {
+    mock_usb_cpg.USBCLKCR.CLKSTP=0;mock_usb_power.MSTPCR2.USB0=0;
+    mock_usb_registers.SYSCFG.SCKE=1;mock_usb_registers.INTSTS0.VBSTS=0;
+    usb_close_ok=true;usb_cleanups=0;plug_on_write=false;
     memset(held,0,sizeof(held));memset(exists,0,sizeof(exists));
+    memset(&keyboard,0,sizeof keyboard);read_scan=UINT32_MAX;
+    require_menu_quiet=false;
     script=steps;script_count=count;script_index=0;
     saves=offs=menus=renders=barriers=0;
     settings_reads=dim_calls=restore_calls=sleeps=0;clock_ticks=0;
@@ -320,7 +348,7 @@ static void assert_no_dim(void){assert(dim_calls==0 && offs==0);}
 static void assert_auto_saved(void)
 {
     assert_once_saved();assert(settings_reads==2);
-    assert(!idle.dimmed && idle.last_activity==rtc_ticks());
+    assert(!idle.dimmed && (rtc_ticks()+SOK_DAY_TICKS-idle.last_activity)%SOK_DAY_TICKS<=1);
     if(fail_write)assert(app.modal==SM_SAVE_ERROR && app.progress.dirty);
 }
 static void expect_startup_notice(void)
@@ -349,7 +377,7 @@ static void check_idle_lifecycle(void)
     const Step failed[]={CHECK(previous_save_then_change),WAIT(600),CHECK(assert_auto_saved)};
     RUN(failed);assert(app.progress.dirty && app.progress.generation==1);
     assert(lengths[0]==previous_length && memcmp(records[0],previous_record,previous_length)==0);
-    const Step reload[]={WAIT(30),DOWN(KEY_MENU),UP(KEY_MENU),WAIT(179),WAIT(1),WAIT(3420)};
+    const Step reload[]={WAIT(30),DOWN(KEY_MENU),UP(KEY_MENU),WAIT(0),WAIT(179),WAIT(1),WAIT(3420)};
     RUN(reload);assert(menus==1 && offs==1 && settings_reads==3 && dim_calls==2 && restore_calls==2);
     const Step clean[]={WAIT(600),CHECK(assert_once_clean),WAIT(599),CHECK(assert_once_clean),WAIT(1)};
     RUN(clean);assert(offs==2 && saves==0);
@@ -365,11 +393,66 @@ static void check_idle_lifecycle(void)
     }
     load_result=SOK_LOAD_NEW;
 }
+static void usb_plug(void){mock_usb_registers.INTSTS0.VBSTS=1;}
+static void usb_unplug(void){mock_usb_registers.INTSTS0.VBSTS=0;}
+static void usb_once(void){assert(menus==1 && offs==0 && !opened && !transaction_active);}
+static void usb_fail_close(void){usb_close_ok=false;}
+static void usb_during_save(void){plug_on_write=true;}
+static void check_usb(void)
+{
+    const Step idle_steps[]={CHECK(usb_plug),WAIT(0),WAIT(0),CHECK(usb_once),WAIT(1),CHECK(usb_once),
+        CHECK(usb_unplug),WAIT(0),CHECK(usb_plug),WAIT(0),WAIT(0)};
+    RUN(idle_steps);assert(menus==2 && !saves && !offs);
+    void (*const fixtures[])(void)={dirty_move,dirty_init_modal,dirty_win_modal,dirty_main,dirty_levels,dirty_load_notice};
+    for(unsigned i=0;i<sizeof fixtures/sizeof fixtures[0];i++){
+        const Step steps[]={CHECK(fixtures[i]),CHECK(usb_plug),DOWN(KEY_MENU),
+            HOLD(KEY_MENU),UP(KEY_MENU),WAIT(0),CHECK(usb_once),WAIT(1),CHECK(usb_once)};
+        RUN(steps);assert(saves==1 && !app.progress.dirty);
+        assert(same_state(&app.progress.levels[0],&expected_game));
+    }
+    const Step off_race[]={CHECK(dirty_move),DOWN(KEY_SHIFT),UP(KEY_SHIFT),
+        CHECK(usb_plug),DOWN(KEY_ACON),HOLD(KEY_ACON),UP(KEY_ACON),WAIT(0),CHECK(usb_once)};
+    RUN(off_race);assert(saves==1);
+    const Step dim[]={WAIT(30),CHECK(assert_dimmed),CHECK(usb_plug),WAIT(0),WAIT(0),CHECK(usb_once)};
+    RUN(dim);assert(restore_calls==1 && !idle.dimmed);
+    for(unsigned failure=0;failure<2;failure++){
+        const Step save_race[]={CHECK(dirty_move),CHECK(usb_during_save),
+            CHECK(failure?fail_save:usb_during_save),DOWN(KEY_MENU),UP(KEY_MENU),WAIT(1),WAIT(1)};
+        RUN(save_race);assert(saves==1 && menus==(failure?0u:1u));
+        assert(app.progress.dirty==(failure!=0));
+    }
+    const Step fail_close[]={CHECK(dirty_move),CHECK(usb_fail_close),CHECK(usb_plug),
+        WAIT(0),WAIT(1),WAIT(1)};
+    RUN(fail_close);assert(!menus && !offs && saves==1 && usb_cleanups==1 && app.modal==SM_SAVE_ERROR);
+    puts("USB native: idle, six committed/modal states, dim, MENU/OFF races, insertion during save/failure, close refusal and rearm PASS; no CPU/replay in this app.");
+}
+static void require_quiet(void){require_menu_quiet=true;}
+static void no_menu(void){assert(!menus && !offs);}
+static void one_menu(void){assert(menus==1 && !offs);}
+static void cancelled_menu(void){assert(!menus && app.menu_input_error);}
+static void menu_then_off(void){assert(menus==1 && offs==1);}
+static void check_menu_boundary(void)
+{
+    const Step release[]={CHECK(require_quiet),DOWN(KEY_MENU),CHECK(no_menu),
+        HOLD(KEY_MENU),CHECK(no_menu),UP(KEY_MENU),WAIT(0),CHECK(one_menu),
+        DOWN(KEY_MENU),UP(KEY_MENU),WAIT(0)};
+    RUN(release);assert(menus==2 && !saves);
+    const Step selection[]={CHECK(require_quiet),DOWN(KEY_EXE),DOWN(KEY_MENU),
+        UP(KEY_MENU),WAIT(0),CHECK(no_menu),UP(KEY_EXE),WAIT(0),CHECK(one_menu)};
+    RUN(selection);assert(!saves);
+    const Step stuck[]={CHECK(require_quiet),DOWN(KEY_MENU),WAIT(3),
+        CHECK(cancelled_menu),UP(KEY_MENU),DOWN(KEY_MENU),UP(KEY_MENU),WAIT(0),CHECK(one_menu)};
+    RUN(stuck);assert(!app.menu_input_error);
+    const Step off[]={CHECK(require_quiet),DOWN(KEY_MENU),DOWN(KEY_SHIFT),UP(KEY_SHIFT),
+        DOWN(KEY_ACON),UP(KEY_ACON),UP(KEY_MENU),WAIT(0),CHECK(menu_then_off)};
+    RUN(off);assert(!saves);
+    puts("MENU ownership: held/HOLD and held EXE defer; real UP plus a fresh scan enters once; stuck cancels with RAM kept; fresh OFF preserved. OS display unverified.");
+}
 int main(void)
 {
     assert(KEY_SHIFT==0x81 && KEY_ACON==0x07 && native_keys[SK_SHIFT]==KEY_SHIFT
         && native_keys[SK_ACON]==KEY_ACON);
-    check_input();check_barriers();check_dirty_screens();check_idle_lifecycle();
+    check_menu_boundary();check_input();check_barriers();check_dirty_screens();check_idle_lifecycle();check_usb();
     puts("power: manual/automatic OFF, all screens, idle dim/wake/held keys, SYSTEM reload and save failures passed");
     return 0;
 }

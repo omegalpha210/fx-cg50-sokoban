@@ -1,10 +1,14 @@
 #include "system_power.h"
 #include <gint/gint.h>
+#include <stddef.h>
 /* CG OS syscall facts and primary references are recorded in docs/POWER.md. */
 extern int sok_os_auto_power_off(void);
 extern char sok_os_backlight_duration(void);
 extern char sok_os_light_level(void);
 extern void sok_os_set_backlight(char level);
+extern int sok_os_enable_menu_return(void);
+static int enable_menu_return(void *unused)
+{ (void)unused; return sok_os_enable_menu_return(); }
 static int read_settings(void *context)
 {
     SokPowerSettings *settings=context;
@@ -23,4 +27,8 @@ void sok_system_backlight(int level)
 {
     /* This add-in targets CG50: level 0 is its inactivity brightness. */
     if(level>=0 && level<=5)gint_world_switch(GINT_CALL(set_brightness,&level));
+}
+int sok_system_enable_menu_return(void)
+{
+    return gint_world_switch(GINT_CALL(enable_menu_return,(void *)NULL));
 }

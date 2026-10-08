@@ -19,3 +19,4 @@ power_syscall _sok_os_auto_power_off, 0x1e91
 power_syscall _sok_os_backlight_duration, 0x12d9
 power_syscall _sok_os_light_level, 0x1e8f
 power_syscall _sok_os_set_backlight, 0x0199
+power_syscall _sok_os_enable_menu_return, 0x1ea6

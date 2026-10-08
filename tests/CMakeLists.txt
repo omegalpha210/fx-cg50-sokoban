@@ -47,3 +47,10 @@ add_executable(capture_public public/capture.c public/fixture.c host/display.c
   ../src/game/game.c ../src/ui/render.c)
 target_include_directories(capture_public PRIVATE host)
 add_test(NAME renderer_public COMMAND capture_public ${CMAKE_CURRENT_BINARY_DIR}/public-captures)
+
+add_executable(test_usb test_usb.c)
+target_include_directories(test_usb PRIVATE native-input ../include)
+add_test(NAME usb_lifecycle COMMAND test_usb)
+add_executable(test_menu_boundary test_menu_boundary.c)
+target_include_directories(test_menu_boundary PRIVATE native-input)
+add_test(NAME menu_boundary COMMAND test_menu_boundary)

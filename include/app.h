@@ -20,7 +20,7 @@ typedef struct {
     SokModal modal,return_modal;
     SokAction pending;
     unsigned group,selection,level,target_level,epoch;
-    bool recovered_notice,power_save_failed;
+    bool recovered_notice,power_save_failed,menu_input_error;
 } SokApp;
 void sok_app_init(SokApp *app,SokHooks hooks);
 void sok_app_load_notice(SokApp *app,bool recovered);

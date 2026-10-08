@@ -2,6 +2,9 @@
 #include "render.h"
 #include "idle.h"
 #include "system_power.h"
+#include "usb_lifecycle.h"
+#include "usb_native.h"
+#include "menu_boundary.h"
 #include <gint/display.h>
 #include <gint/keyboard.h>
 #include <gint/drivers/keydev.h>
@@ -12,6 +15,9 @@
 static SokApp app;
 static SokIdle idle;
 static SokPowerSettings power_settings;
+static UsbLifecycle usb;
+static CgMenuBoundary menu_boundary;
+static bool deferred_off;
 static void reload_power(void)
 {
     sok_system_power_settings(&power_settings);
@@ -27,9 +33,64 @@ static const int native_keys[SK_COUNT]={KEY_UP,KEY_RIGHT,KEY_DOWN,KEY_LEFT,KEY_F
 static bool save(void *context,SokProgress *progress)
 {(void)context;return sok_storage_save(progress);}
 static void os_menu(void *context)
-{(void)context;restore_backlight();gint_osmenu();reload_power();}
+{
+    (void)context;app.menu_input_error=false;
+    cg_menu_request(&menu_boundary,rtc_ticks());
+}
+static bool service_menu(void)
+{
+    int boundary=cg_menu_step(&menu_boundary,keydev_std(),rtc_ticks(),SOK_DAY_TICKS);
+    if(boundary==CG_MENU_IDLE || boundary==CG_MENU_WAIT)return false;
+    if(boundary!=CG_MENU_READY){cg_menu_cancel(&menu_boundary);app.menu_input_error=true;return true;}
+    if(!usb_handoff_begin(&usb,usb_native_sample()))return false;
+    if(!sok_storage_cleanup()){
+        app.return_modal=app.modal;app.modal=SM_SAVE_ERROR;app.pending=SA_OS_MENU;
+        cg_menu_cancel(&menu_boundary);usb_handoff_end(&usb,usb_native_sample());return true;
+    }
+    /* Filesystem world return can produce new input; recheck without clearing
+       its events. The saved game cannot change while the request is deferred. */
+    boundary=cg_menu_step(&menu_boundary,keydev_std(),rtc_ticks(),SOK_DAY_TICKS);
+    if(boundary!=CG_MENU_READY){
+        usb_handoff_end(&usb,usb_native_sample());
+        if(boundary==CG_MENU_INVALID || boundary==CG_MENU_TIMEOUT){cg_menu_cancel(&menu_boundary);app.menu_input_error=true;return true;}
+        return false;
+    }
+    cg_menu_cancel(&menu_boundary); /* Consume before the one OS call. */
+#if !defined(SOK_TEST_POWER_GINT_H)
+    while (keydown(KEY_MENU) || keydown(KEY_EXIT)) sleep();
+    clearevents();
+    sok_system_enable_menu_return();
+#endif
+    restore_backlight();gint_osmenu();reload_power();usb_handoff_end(&usb,usb_native_sample());
+    /* Do not discard a genuinely new MENU/OFF queued after helper return. */
+    sok_input_barrier(&app.input);return true;
+}
 static void power_off(void *context)
-{(void)context;restore_backlight();gint_poweroff(true);reload_power();}
+{
+    (void)context;if(!usb_handoff_begin(&usb,usb_native_sample()))return;
+    if(!sok_storage_cleanup()){
+        app.return_modal=app.modal;app.modal=SM_SAVE_ERROR;app.pending=SA_STAY;
+        usb_handoff_end(&usb,usb_native_sample());return;
+    }
+#if !defined(SOK_TEST_POWER_GINT_H)
+    /* Safe OS Parking Rule (KhiCAS pattern):
+       When user presses SHIFT+AC/ON or APO occurs inside add-in,
+       save data was safely committed above.
+       Wait for key release, enable OS Main Menu return via Syscall 0x1EA6,
+       and cleanly park into Casio OS Main Menu via gint_osmenu().
+       The native Casio OS manages sleep safely without RAM retention risk. */
+    while (keydown(KEY_ACON) || keydown(KEY_SHIFT) || keydown(KEY_MENU) || keydown(KEY_EXIT)) sleep();
+    clearevents();
+    sok_system_enable_menu_return();
+    restore_backlight();
+    gint_osmenu();
+    reload_power();
+    usb_handoff_end(&usb,usb_native_sample());
+    sok_input_barrier(&app.input);
+#else
+    restore_backlight();gint_poweroff(true);reload_power();usb_handoff_end(&usb,usb_native_sample());
+#endif
+}
 static int repeat(int key,int duration,int count)
 {
     (void)duration;
@@ -45,20 +106,67 @@ static void barrier(void)
     for(unsigned i=0;i<SK_COUNT;i++)if(keydown(native_keys[i]))app.input.held|=UINT32_C(1)<<i;
     sok_input_barrier(&app.input);
 }
+static void collect_menu_event(key_event_t event)
+{
+    SokKey key=SK_NONE;
+    for(unsigned i=0;i<SK_COUNT;i++)if(event.key==(unsigned)native_keys[i]){key=(SokKey)i;break;}
+    SokEventType type;
+    if(event.type==KEYEV_DOWN)type=SE_DOWN;
+    else if(event.type==KEYEV_UP)type=SE_UP;
+    else if(event.type==KEYEV_HOLD)type=SE_HOLD;
+    else return;
+    bool accepted=sok_input_event(&app.input,key,type);
+    if(!accepted)return;
+    if(app.input.poweroff)deferred_off=true;
+    else if(key==SK_MENU)cg_menu_request(&menu_boundary,rtc_ticks());
+    else if(key==SK_EXIT){cg_menu_cancel(&menu_boundary);app.menu_input_error=false;}
+}
 int main(void)
 {
+    cg_menu_cancel(&menu_boundary);deferred_off=false;
     dsetvram(gint_vram,NULL);
     sok_app_init(&app,(SokHooks){.save=save,.os_menu=os_menu,.power_off=power_off});
     SokLoadResult loaded=sok_storage_load(&app.progress);
     if(loaded==SOK_LOAD_RECOVERED)sok_app_load_notice(&app,true);
     else if(loaded==SOK_LOAD_INVALID || loaded==SOK_LOAD_IO_ERROR)sok_app_load_notice(&app,false);
     keydev_set_transform(keydev_std(),(keydev_transform_t){KEYDEV_TR_REPEATS,repeat});
-    reload_power();barrier();sok_render(&app);
+    reload_power();usb_initialize(&usb,usb_native_sample());barrier();sok_render(&app);
     for(;;) {
+        if(deferred_off && !menu_boundary.pending){
+            deferred_off=false;sok_app_power_off(&app);sok_input_barrier(&app.input);sok_render(&app);continue;
+        }
         /* Raw transformed keydev events retain releases,
            and never auto-handle MENU/OFF. Our input layer tracks tap/held
            modifiers so the complete checkpoint precedes either OS action. */
         key_event_t event=keydev_read(keydev_std(),false,NULL);
+        usb_observe(&usb,usb_native_sample());
+        if(usb_take_request(&usb)) {
+            /* A detected insertion absorbs simultaneous MENU/OFF/APO input.
+               One finite checkpoint attempt; existing save-error UI owns retry. */
+            if(!menu_boundary.pending)(void)sok_app_key(&app,SK_MENU);
+            if(!menu_boundary.pending){barrier();sok_render(&app);continue;}
+            sok_render(&app);
+        }
+        if(menu_boundary.pending){
+            /* No blocking release wait and no gameplay during an outstanding
+               checkpointed MENU. Consume UPs and retain fresh global input. */
+            for(unsigned count=0;count<32;count++){
+                collect_menu_event(event);usb_observe(&usb,usb_native_sample());
+                (void)usb_take_request(&usb); /* Coalesce into the existing MENU. */
+                bool activity=event.type!=KEYEV_NONE || !keydev_idle(keydev_std(),0);
+                SokIdleAction pending_idle=sok_idle_update(&idle,rtc_ticks(),activity);
+                if(pending_idle==SOK_IDLE_OFF)deferred_off=true;
+                if(pending_idle==SOK_IDLE_DIM && power_settings.brightness>=1 && power_settings.brightness<=5)
+                    sok_system_backlight(0);
+                else if(pending_idle==SOK_IDLE_RESTORE && power_settings.brightness>=1 && power_settings.brightness<=5)
+                    sok_system_backlight(power_settings.brightness);
+                if(event.type==KEYEV_NONE || count+1==32)break;
+                event=keydev_read(keydev_std(),false,NULL);
+            }
+            if(service_menu() || !menu_boundary.pending)sok_render(&app);
+            if(event.type==KEYEV_NONE)sleep();
+            continue;
+        }
         bool activity=event.type==KEYEV_DOWN || event.type==KEYEV_UP
             || event.type==KEYEV_HOLD || !keydev_idle(keydev_std(),0);
         SokIdleAction action=sok_idle_update(&idle,rtc_ticks(),activity);
@@ -83,7 +191,13 @@ int main(void)
         }
         unsigned epoch=app.epoch;
         bool changed=sok_app_event(&app,key,type);
-        if(app.epoch!=epoch)barrier();
+        if(type==SE_DOWN && (key==SK_MENU || key==SK_ACON)){
+            /* Also settle an insertion during a failed checkpoint, for which
+               the OS callback was never reached. */
+            (void)usb_handoff_begin(&usb,usb_native_sample());
+            usb_handoff_end(&usb,usb_native_sample());
+        }
+        if(app.epoch!=epoch && !menu_boundary.pending)barrier();
         if(changed)sok_render(&app);
     }
 }

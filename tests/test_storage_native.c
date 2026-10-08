@@ -211,8 +211,12 @@ int main(void)
     assert(!sok_storage_save(&progress));
     assert(switches == previous + 1 && !os_world && opened);
     assert(progress.dirty && progress.generation == 1);
+    fail_close_write=1;previous=calls;
+    assert(!sok_storage_cleanup() && opened && calls==previous+1 && !os_world);
+    assert(sok_storage_cleanup() && !opened && !os_world);
+    assert(sok_storage_cleanup()); /* No double close. */
     good_save();
-    assert(failed_closes == 3 && progress.generation == 3);
+    assert(failed_closes == 4 && progress.generation == 3);
     wrote = false;
     previous = switches;
     assert(sok_storage_load(&loaded) == SOK_LOAD_OK);

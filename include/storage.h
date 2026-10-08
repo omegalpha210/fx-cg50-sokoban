@@ -63,5 +63,7 @@ bool sok_storage_save_io(SokProgress *progress, const SokStorageIO *io);
  * readback, runs in a SINGLE gint OS world switch. */
 SokLoadResult sok_storage_load(SokProgress *progress);
 bool sok_storage_save(SokProgress *progress);
+/* Bounded retry of a retained native close failure before USB/MENU handoff. */
+bool sok_storage_cleanup(void);
 
 #endif
