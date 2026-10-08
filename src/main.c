@@ -21,8 +21,26 @@ static bool deferred_off;
 static void reload_power(void)
 {
     sok_system_power_settings(&power_settings);
+#if !defined(SOK_TEST_POWER_GINT_H)
+    /* KhiCAS Golden Rule: 5 minutes (300 seconds) auto-park on hardware */
+    sok_idle_init(&idle,rtc_ticks(),5,power_settings.dim_half_minutes);
+#else
     sok_idle_init(&idle,rtc_ticks(),power_settings.off_minutes,power_settings.dim_half_minutes);
+#endif
 }
+#if !defined(SOK_TEST_POWER_GINT_H)
+static void show_poweroff_notice(void)
+{
+    int box_w = 340, box_h = 96;
+    int box_x = (396 - box_w) / 2;
+    int box_y = (224 - box_h) / 2;
+    drect_border(box_x, box_y, box_x + box_w - 1, box_y + box_h - 1, C_WHITE, 2, C_RGB(0, 16, 31));
+    dtext_opt(396 / 2, box_y + 16, C_BLACK, C_NONE, DTEXT_CENTER, DTEXT_TOP, "Back to Main Menu");
+    dtext_opt(396 / 2, box_y + 46, C_RGB(0, 12, 28), C_NONE, DTEXT_CENTER, DTEXT_TOP, "To shutdown, press SHIFT AC/ON");
+    dtext_opt(396 / 2, box_y + 66, C_DARK, C_NONE, DTEXT_CENTER, DTEXT_TOP, "again in Main Menu");
+    dupdate();
+}
+#endif
 static void restore_backlight(void)
 {
     if(idle.dimmed && power_settings.brightness>=1 && power_settings.brightness<=5)
@@ -73,13 +91,11 @@ static void power_off(void *context)
         usb_handoff_end(&usb,usb_native_sample());return;
     }
 #if !defined(SOK_TEST_POWER_GINT_H)
-    /* Safe OS Parking Rule (KhiCAS pattern):
-       When user presses SHIFT+AC/ON or APO occurs inside add-in,
-       save data was safely committed above.
-       Wait for key release, enable OS Main Menu return via Syscall 0x1EA6,
-       and cleanly park into Casio OS Main Menu via gint_osmenu().
-       The native Casio OS manages sleep safely without RAM retention risk. */
-    while (keydown(KEY_ACON) || keydown(KEY_SHIFT) || keydown(KEY_MENU) || keydown(KEY_EXIT)) sleep();
+    /* KhiCAS Rule: Display notice, wait 1 second (128 ticks), clear events,
+       and safely park in Casio OS Main Menu via 0x1EA6 + gint_osmenu(). */
+    show_poweroff_notice();
+    uint32_t notice_t0 = rtc_ticks();
+    while ((rtc_ticks() + SOK_DAY_TICKS - notice_t0) % SOK_DAY_TICKS < 128) sleep();
     clearevents();
     sok_system_enable_menu_return();
     restore_backlight();

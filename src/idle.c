@@ -2,7 +2,7 @@
 void sok_idle_init(SokIdle *idle,uint32_t now,int off_minutes,int dim_half_minutes)
 {
     /* Accept the CG50 SYSTEM choices, with finite defaults for invalid reads. */
-    if(off_minutes!=10 && off_minutes!=60)off_minutes=10;
+    if(off_minutes!=5 && off_minutes!=10 && off_minutes!=60)off_minutes=10;
     if(dim_half_minutes!=1 && dim_half_minutes!=2 && dim_half_minutes!=6)dim_half_minutes=1;
     *idle=(SokIdle){now%SOK_DAY_TICKS,(uint32_t)dim_half_minutes*30u*SOK_CLOCK_HZ,
         (uint32_t)off_minutes*60u*SOK_CLOCK_HZ,false};
